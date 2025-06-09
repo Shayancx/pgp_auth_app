@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 require "roda"
+require "cgi"
 require_relative "config/database"
 require "rodauth"
 require_relative "lib/pgp_auth"
@@ -308,7 +309,6 @@ mQINBF...
                 font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace; 
                 font-size: 13px; 
                 line-height: 1.4; 
-                word-break: break-all; 
                 color: #cccccc;
                 margin-bottom: 24px;
                 max-height: 300px;
@@ -408,7 +408,7 @@ mQINBF...
               
               <div class="challenge-container">
                 <div class="instructions">Encrypted message:</div>
-                <div class="encrypted-text">#{encrypted}</div>
+                <pre class="encrypted-text">#{CGI.escapeHTML(encrypted)}</pre>
               </div>
               
               <div class="form-container">
