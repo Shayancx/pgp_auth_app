@@ -1,4 +1,7 @@
+<h2>Register with PGP Key</h2>
+<p>Paste your ASCII-armored PGP public key below:</p>
 <form method="post">
-  <textarea name="public_key" cols="80" rows="12" placeholder="Paste ASCII-armored public key"></textarea><br>
-  <button>Submit public key</button>
+  <%= csrf_tag %>
+  <textarea name="public_key" cols="80" rows="12" placeholder="Paste ASCII-armored public key" required></textarea><br>
+  <button type="submit">Submit public key</button>
 </form>

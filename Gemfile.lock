@@ -1,13 +1,21 @@
 GEM
   remote: https://rubygems.org/
   specs:
+    base64 (0.3.0)
+    bcrypt (3.1.20)
     bigdecimal (3.2.2)
     erubi (1.13.1)
     gpgme (2.0.24)
       mini_portile2 (~> 2.7)
     mini_portile2 (2.8.9)
+    nio4r (2.7.4)
     pg (1.5.9)
+    puma (6.6.0)
+      nio4r (~> 2.0)
     rack (3.1.16)
+    rack-session (2.1.1)
+      base64 (>= 0.1.0)
+      rack (>= 3.0.0)
     rack_csrf (2.7.0)
       rack (>= 1.1.0)
     rackup (2.2.1)
@@ -26,9 +34,12 @@ PLATFORMS
   x86_64-linux
 
 DEPENDENCIES
+  bcrypt
   erubi
   gpgme
   pg
+  puma
+  rack-session
   rack_csrf
   rackup
   roda
