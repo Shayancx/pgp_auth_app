@@ -2,11 +2,14 @@ GEM
   remote: https://rubygems.org/
   specs:
     bigdecimal (3.2.2)
+    erubi (1.13.1)
     gpgme (2.0.24)
       mini_portile2 (~> 2.7)
     mini_portile2 (2.8.9)
     pg (1.5.9)
     rack (3.1.16)
+    rack_csrf (2.7.0)
+      rack (>= 1.1.0)
     rackup (2.2.1)
       rack (>= 3)
     roda (3.92.0)
@@ -16,18 +19,22 @@ GEM
       sequel (>= 4)
     sequel (5.93.0)
       bigdecimal
+    tilt (2.6.0)
 
 PLATFORMS
   ruby
   x86_64-linux
 
 DEPENDENCIES
+  erubi
   gpgme
   pg
+  rack_csrf
   rackup
   roda
   rodauth (~> 2.33)
   sequel
+  tilt
 
 BUNDLED WITH
    2.6.9

@@ -7,13 +7,11 @@ require_relative "pgp_challenge_feature"
 class App < Roda
   plugin :render, escape: true
   plugin :flash
-  plugin :sessions, secret: ENV.fetch("SESSION_SECRET") { "dev_secret_change" }
+  plugin :sessions, secret: ENV.fetch("SESSION_SECRET") { "dev_secret_change_this_to_something_much_longer_at_least_64_chars_for_security" }
   plugin :csrf
 
   plugin :rodauth do
     enable :pgp_challenge
-    create_account? false          # built-in password flow disabled
-    account_password_hash_column nil
     login_redirect "/dashboard"
     logout_redirect "/"
   end
