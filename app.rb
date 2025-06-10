@@ -7,6 +7,8 @@ require "rodauth"
 require_relative "lib/pgp_auth"
 require_relative "lib/rate_limit"
 require_relative "pgp_challenge_feature"
+require_relative "lib/session_manager"
+require_relative "lib/session_middleware"
 require "bcrypt"
 
 class App < Roda
@@ -14,6 +16,11 @@ class App < Roda
   plugin :render, engine: "erb", views: "views"
   plugin :public
   plugin :default_headers, 
+
+  # Session security middleware
+  plugin :middleware do |middleware|
+    middleware.use SessionMiddleware
+  end
     'Content-Type'=>'text/html; charset=UTF-8'
 
   plugin :rodauth do
@@ -42,6 +49,10 @@ class App < Roda
       end
       
       r.post do
+        # Revoke session properly
+        if session[:session_token]
+          SessionManager.revoke_session(session[:session_token], "user_logout")
+        end
         session.clear
         flash["notice"] = "You have been logged out"
         r.redirect "/"
@@ -216,6 +227,15 @@ class App < Roda
           RateLimit.reset_password_failures(@account[:username])
           
           DB[:challenges].where(account_id: account_id).delete
+          # Create secure session
+          session_token = SessionManager.create_session(account_id, client_ip, env["HTTP_USER_AGENT"])
+          session[:session_token] = session_token
+          # Create secure session
+          session_token = SessionManager.create_session(account_id, client_ip, env["HTTP_USER_AGENT"])
+          session[:session_token] = session_token
+          # Create secure session
+          session_token = SessionManager.create_session(account_id, client_ip, env["HTTP_USER_AGENT"])
+          session[:session_token] = session_token
           session[:rodauth_session_key] = account_id
           session.delete(:pgp_only_account_id)
           session.delete(:login_username)
@@ -369,6 +389,15 @@ class App < Roda
           )
           
           # Log the user in
+          # Create secure session
+          session_token = SessionManager.create_session(account_id, client_ip, env["HTTP_USER_AGENT"])
+          session[:session_token] = session_token
+          # Create secure session
+          session_token = SessionManager.create_session(account_id, client_ip, env["HTTP_USER_AGENT"])
+          session[:session_token] = session_token
+          # Create secure session
+          session_token = SessionManager.create_session(account_id, client_ip, env["HTTP_USER_AGENT"])
+          session[:session_token] = session_token
           session[:rodauth_session_key] = account_id
           session.delete(:unverified_account_id)
           flash["notice"] = "Account created and verified successfully!"
@@ -432,6 +461,15 @@ class App < Roda
         
         if submitted_code == row[:code]
           DB[:challenges].where(account_id: account_id).delete
+          # Create secure session
+          session_token = SessionManager.create_session(account_id, client_ip, env["HTTP_USER_AGENT"])
+          session[:session_token] = session_token
+          # Create secure session
+          session_token = SessionManager.create_session(account_id, client_ip, env["HTTP_USER_AGENT"])
+          session[:session_token] = session_token
+          # Create secure session
+          session_token = SessionManager.create_session(account_id, client_ip, env["HTTP_USER_AGENT"])
+          session[:session_token] = session_token
           session[:rodauth_session_key] = account_id
           session.delete(:pending_account_id)
           flash["notice"] = "Authentication successful"
@@ -443,6 +481,67 @@ class App < Roda
       end
     end
 
+
+    # Session Management
+    r.on "sessions" do
+      unless session[:rodauth_session_key]
+        r.redirect "/login"
+      end
+      
+      account_id = session[:rodauth_session_key]
+      @account = DB[:accounts].where(id: account_id).first
+      
+      unless @account
+        session.clear
+        r.redirect "/login"
+      end
+      
+      r.get do
+        @sessions = SessionManager.get_active_sessions(account_id)
+        @current_token = session[:session_token]
+        view "sessions"
+      end
+      
+      r.post "revoke" do
+        token = r.params["token"]
+        if token && token != session[:session_token]
+          SessionManager.revoke_session(token, "user_revoked")
+          flash["notice"] = "Session revoked successfully"
+        end
+        r.redirect "/sessions"
+      end
+      
+      r.post "revoke_all" do
+        count = SessionManager.revoke_all_sessions(account_id, session[:session_token])
+        flash["notice"] = "#{count} sessions revoked"
+        r.redirect "/sessions"
+      end
+    end
+    
+    # Security Dashboard
+    r.on "security" do
+      unless session[:rodauth_session_key]
+        r.redirect "/login"
+      end
+      
+      account_id = session[:rodauth_session_key]
+      @account = DB[:accounts].where(id: account_id).first
+      
+      unless @account
+        session.clear
+        r.redirect "/login"
+      end
+      
+      @audit_log = SessionManager.get_audit_log(account_id)
+      @active_sessions = SessionManager.get_active_sessions(account_id)
+      @rate_limit_status = {
+        login: RateLimit.time_until_retry(client_ip, "login"),
+        password: RateLimit.time_until_retry(@account[:username], "password"),
+        twofa: RateLimit.time_until_retry(account_id.to_s, "2fa")
+      }
+      
+      view "security"
+    end
     # Dashboard
     r.on "dashboard" do
       unless session[:rodauth_session_key]
@@ -453,6 +552,10 @@ class App < Roda
       @account = DB[:accounts].where(id: account_id).first
       
       unless @account
+        # Revoke session properly
+        if session[:session_token]
+          SessionManager.revoke_session(session[:session_token], "user_logout")
+        end
         session.clear
         r.redirect "/login"
       end

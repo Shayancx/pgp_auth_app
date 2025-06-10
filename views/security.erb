@@ -1,0 +1,103 @@
+<div class="security-icon">🛡️</div>
+<h2>Security Dashboard</h2>
+<p class="subtitle">Monitor your account security</p>
+
+<div class="security-overview">
+  <div class="security-card">
+    <h3>Account Status</h3>
+    <div class="status-item">
+      <strong>Username:</strong> <%= CGI.escapeHTML(@account[:username]) %>
+    </div>
+    <div class="status-item">
+      <strong>Verified:</strong> 
+      <span class="<%= @account[:verified] ? 'status-good' : 'status-warning' %>">
+        <%= @account[:verified] ? 'Yes' : 'No' %>
+      </span>
+    </div>
+    <div class="status-item">
+      <strong>PGP-Only Mode:</strong> 
+      <span class="<%= @account[:pgp_only_mode] ? 'status-warning' : 'status-good' %>">
+        <%= @account[:pgp_only_mode] ? 'Active' : 'Inactive' %>
+      </span>
+    </div>
+    <div class="status-item">
+      <strong>Failed Password Count:</strong> 
+      <span class="<%= (@account[:failed_password_count] || 0) > 5 ? 'status-warning' : 'status-good' %>">
+        <%= @account[:failed_password_count] || 0 %>/10
+      </span>
+    </div>
+  </div>
+
+  <div class="security-card">
+    <h3>Active Sessions</h3>
+    <div class="status-item">
+      <strong>Total Sessions:</strong> <%= @active_sessions.length %>
+    </div>
+    <div class="status-item">
+      <strong>Max Allowed:</strong> <%= @account[:max_concurrent_sessions] %>
+    </div>
+    <div class="status-item">
+      <strong>Session Timeout:</strong> <%= @account[:session_timeout_hours] %> hours
+    </div>
+  </div>
+
+  <div class="security-card">
+    <h3>Rate Limit Status</h3>
+    <div class="status-item">
+      <strong>Login Attempts:</strong> 
+      <span class="<%= @rate_limit_status[:login] > 0 ? 'status-warning' : 'status-good' %>">
+        <%= @rate_limit_status[:login] > 0 ? "Blocked for #{RateLimit.format_time_remaining(@rate_limit_status[:login])}" : 'OK' %>
+      </span>
+    </div>
+    <div class="status-item">
+      <strong>Password Attempts:</strong> 
+      <span class="<%= @rate_limit_status[:password] > 0 ? 'status-warning' : 'status-good' %>">
+        <%= @rate_limit_status[:password] > 0 ? "Blocked for #{RateLimit.format_time_remaining(@rate_limit_status[:password])}" : 'OK' %>
+      </span>
+    </div>
+    <div class="status-item">
+      <strong>2FA Attempts:</strong> 
+      <span class="<%= @rate_limit_status[:twofa] > 0 ? 'status-warning' : 'status-good' %>">
+        <%= @rate_limit_status[:twofa] > 0 ? "Blocked for #{RateLimit.format_time_remaining(@rate_limit_status[:twofa])}" : 'OK' %>
+      </span>
+    </div>
+  </div>
+</div>
+
+<div class="audit-log">
+  <h3>Recent Activity</h3>
+  <% if @audit_log.empty? %>
+    <p>No recent activity.</p>
+  <% else %>
+    <div class="audit-table">
+      <% @audit_log.each do |entry| %>
+        <div class="audit-row">
+          <div class="audit-time"><%= entry[:created_at].strftime('%m/%d %H:%M') %></div>
+          <div class="audit-event 
+            <%= case entry[:event_type]
+                when 'login' then 'event-success'
+                when 'login_failed' then 'event-danger'
+                when 'session_revoked' then 'event-warning'
+                else 'event-info'
+                end %>">
+            <%= entry[:event_type].gsub('_', ' ').titleize %>
+          </div>
+          <div class="audit-details">
+            IP: <%= entry[:ip_address] || 'Unknown' %>
+            <% if entry[:details] && !entry[:details].empty? %>
+              <% details = JSON.parse(entry[:details]) rescue {} %>
+              <% if details['reason'] %>
+                (Reason: <%= details['reason'] %>)
+              <% end %>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+</div>
+
+<div class="btn-group">
+  <a href="/dashboard" class="btn btn-secondary">← Back to Dashboard</a>
+  <a href="/sessions" class="btn">Manage Sessions</a>
+</div>

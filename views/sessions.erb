@@ -1,0 +1,54 @@
+<div class="security-icon">📱</div>
+<h2>Active Sessions</h2>
+<p class="subtitle">Manage your device sessions</p>
+
+<% if flash['notice'] %>
+  <div class="notice"><%= flash['notice'] %></div>
+<% end %>
+
+<% if flash['error'] %>
+  <div class="error"><%= flash['error'] %></div>
+<% end %>
+
+<div class="welcome-container">
+  <% if @sessions.empty? %>
+    <p>No active sessions found.</p>
+  <% else %>
+    <% @sessions.each do |session| %>
+      <% fingerprint = SessionManager.session_fingerprint(session) %>
+      <div class="session-item">
+        <div class="session-header">
+          <strong><%= fingerprint[:browser] %></strong>
+          <% if session[:session_token] == @current_token %>
+            <span class="current-session">Current Session</span>
+          <% end %>
+        </div>
+        <div class="session-details">
+          <div>IP: <%= session[:ip_address] || 'Unknown' %></div>
+          <div>Created: <%= fingerprint[:created].strftime('%Y-%m-%d %H:%M:%S') %></div>
+          <div>Last Active: <%= fingerprint[:last_accessed].strftime('%Y-%m-%d %H:%M:%S') %></div>
+          <div>Expires: <%= fingerprint[:expires].strftime('%Y-%m-%d %H:%M:%S') %></div>
+        </div>
+        <% unless session[:session_token] == @current_token %>
+          <form method="post" action="/sessions/revoke" class="inline-form">
+            <%= csrf_tag %>
+            <input type="hidden" name="token" value="<%= session[:session_token] %>">
+            <button type="submit" class="btn-danger btn-small" onclick="return confirm('Revoke this session?')">Revoke</button>
+          </form>
+        <% end %>
+      </div>
+    <% end %>
+    
+    <% if @sessions.length > 1 %>
+      <form method="post" action="/sessions/revoke_all" class="revoke-all-form">
+        <%= csrf_tag %>
+        <button type="submit" class="btn-danger" onclick="return confirm('Revoke all other sessions? You will remain logged in on this device.')">Revoke All Other Sessions</button>
+      </form>
+    <% end %>
+  <% end %>
+</div>
+
+<div class="btn-group">
+  <a href="/dashboard" class="btn btn-secondary">← Back to Dashboard</a>
+  <a href="/security" class="btn">Security Dashboard</a>
+</div>
