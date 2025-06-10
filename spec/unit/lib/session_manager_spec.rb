@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'spec_helper'
 
 RSpec.describe SessionManager do
@@ -21,16 +23,16 @@ RSpec.describe SessionManager do
   describe '.create_session' do
     it 'creates a new session token' do
       token = SessionManager.create_session(account_id, ip_address, user_agent)
-      
+
       expect(token).to match(/^[a-f0-9]{64}$/)
       expect(DB[:user_sessions].count).to eq(1)
     end
 
     it 'logs the login event' do
-      expect {
+      expect do
         SessionManager.create_session(account_id, ip_address, user_agent)
-      }.to change { DB[:audit_logs].count }.by(1)
-      
+      end.to change { DB[:audit_logs].count }.by(1)
+
       log = DB[:audit_logs].first
       expect(log[:event_type]).to eq('login')
     end
@@ -42,15 +44,15 @@ RSpec.describe SessionManager do
       end
 
       # Creating one more should revoke the oldest
-      expect {
+      expect do
         SessionManager.create_session(account_id, ip_address, user_agent)
-      }.to change { DB[:audit_logs].where(event_type: 'session_revoked').count }.by(1)
+      end.to change { DB[:audit_logs].where(event_type: 'session_revoked').count }.by(1)
     end
 
     it 'sets correct expiration time' do
       token = SessionManager.create_session(account_id, ip_address, user_agent)
       session = DB[:user_sessions].where(session_token: token).first
-      
+
       expected_expiry = Time.now + (24 * 3600)
       expect(session[:expires_at]).to be_within(5).of(expected_expiry)
     end
@@ -83,10 +85,10 @@ RSpec.describe SessionManager do
 
     it 'updates last accessed time' do
       original_time = DB[:user_sessions].where(session_token: token).first[:last_accessed_at]
-      
+
       Timecop.travel(Time.now + 3600)
       SessionManager.validate_session(token, ip_address, user_agent)
-      
+
       new_time = DB[:user_sessions].where(session_token: token).first[:last_accessed_at]
       expect(new_time).to be > original_time
     end
@@ -97,16 +99,16 @@ RSpec.describe SessionManager do
 
     it 'marks session as revoked' do
       SessionManager.revoke_session(token)
-      
+
       session = DB[:user_sessions].where(session_token: token).first
       expect(session[:revoked]).to be true
       expect(session[:revoked_at]).not_to be_nil
     end
 
     it 'logs the revocation' do
-      expect {
+      expect do
         SessionManager.revoke_session(token, 'test_reason')
-      }.to change { DB[:audit_logs].where(event_type: 'session_revoked').count }.by(1)
+      end.to change { DB[:audit_logs].where(event_type: 'session_revoked').count }.by(1)
     end
 
     it 'returns false for non-existent session' do
@@ -122,7 +124,7 @@ RSpec.describe SessionManager do
 
     it 'revokes all sessions for account' do
       count = SessionManager.revoke_all_sessions(account_id)
-      
+
       expect(count).to eq(3)
       expect(DB[:user_sessions].where(account_id: account_id, revoked: false).count).to eq(0)
     end
@@ -130,9 +132,9 @@ RSpec.describe SessionManager do
     it 'can exclude a specific token' do
       tokens = DB[:user_sessions].where(account_id: account_id).map(:session_token)
       keep_token = tokens.first
-      
+
       count = SessionManager.revoke_all_sessions(account_id, keep_token)
-      
+
       expect(count).to eq(2)
       expect(DB[:user_sessions].where(session_token: keep_token, revoked: false).count).to eq(1)
     end
@@ -143,21 +145,21 @@ RSpec.describe SessionManager do
       active_token = SessionManager.create_session(account_id, ip_address, user_agent)
       revoked_token = SessionManager.create_session(account_id, ip_address, user_agent)
       SessionManager.revoke_session(revoked_token)
-      
+
       sessions = SessionManager.get_active_sessions(account_id)
-      
+
       expect(sessions.size).to eq(1)
       expect(sessions.first[:session_token]).to eq(active_token)
     end
 
     it 'orders by last accessed time descending' do
       token1 = SessionManager.create_session(account_id, ip_address, user_agent)
-      
+
       Timecop.travel(Time.now + 3600)
       token2 = SessionManager.create_session(account_id, ip_address, user_agent)
-      
+
       sessions = SessionManager.get_active_sessions(account_id)
-      
+
       expect(sessions.first[:session_token]).to eq(token2)
       expect(sessions.last[:session_token]).to eq(token1)
     end
@@ -166,12 +168,12 @@ RSpec.describe SessionManager do
   describe '.cleanup_expired_sessions' do
     it 'marks expired sessions as revoked' do
       token = SessionManager.create_session(account_id, ip_address, user_agent)
-      
+
       Timecop.travel(Time.now + 25 * 3600)
       result = SessionManager.cleanup_expired_sessions
-      
+
       expect(result[:expired_sessions]).to eq(1)
-      
+
       session = DB[:user_sessions].where(session_token: token).first
       expect(session[:revoked]).to be true
     end
@@ -183,7 +185,7 @@ RSpec.describe SessionManager do
         event_type: 'login',
         created_at: Time.now - 91 * 24 * 3600
       )
-      
+
       result = SessionManager.cleanup_expired_sessions
       expect(result[:old_logs]).to eq(1)
     end
@@ -193,26 +195,26 @@ RSpec.describe SessionManager do
     it 'returns audit logs for account' do
       SessionManager.create_session(account_id, ip_address, user_agent)
       SessionManager.create_session(account_id, ip_address, user_agent)
-      
+
       logs = SessionManager.get_audit_log(account_id)
-      
+
       expect(logs.size).to eq(2)
       expect(logs.all? { |log| log[:event_type] == 'login' }).to be true
     end
 
     it 'respects limit parameter' do
       5.times { SessionManager.create_session(account_id, ip_address, user_agent) }
-      
+
       logs = SessionManager.get_audit_log(account_id, 3)
       expect(logs.size).to eq(3)
     end
 
     it 'orders by created_at descending' do
       SessionManager.create_session(account_id, ip_address, user_agent)
-      
+
       Timecop.travel(Time.now + 3600)
       SessionManager.log_event(account_id, 'test_event', nil, nil, {})
-      
+
       logs = SessionManager.get_audit_log(account_id)
       expect(logs.first[:event_type]).to eq('test_event')
     end

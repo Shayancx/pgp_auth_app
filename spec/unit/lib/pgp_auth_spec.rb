@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'spec_helper'
 
 RSpec.describe PgpAuth do
@@ -14,37 +16,37 @@ RSpec.describe PgpAuth do
     end
 
     it 'raises error for invalid PGP key' do
-      expect {
-        PgpAuth.import_and_fingerprint("invalid key data")
-      }.to raise_error(GPGME::Error)
+      expect do
+        PgpAuth.import_and_fingerprint('invalid key data')
+      end.to raise_error(GPGME::Error)
     end
 
     it 'handles empty input' do
-      expect {
-        PgpAuth.import_and_fingerprint("")
-      }.to raise_error(GPGME::Error)
+      expect do
+        PgpAuth.import_and_fingerprint('')
+      end.to raise_error(GPGME::Error)
     end
   end
 
   describe '.encrypt_for' do
     it 'encrypts plaintext for given fingerprint' do
-      plaintext = "test message"
+      plaintext = 'test message'
       encrypted = PgpAuth.encrypt_for(@fingerprint, plaintext)
-      
-      expect(encrypted).to include("-----BEGIN PGP MESSAGE-----")
-      expect(encrypted).to include("-----END PGP MESSAGE-----")
+
+      expect(encrypted).to include('-----BEGIN PGP MESSAGE-----')
+      expect(encrypted).to include('-----END PGP MESSAGE-----')
     end
 
     it 'raises error for non-existent fingerprint' do
-      expect {
-        PgpAuth.encrypt_for("NONEXISTENT0000000000000000000000000000", "test")
-      }.to raise_error(/public key .* not found/)
+      expect do
+        PgpAuth.encrypt_for('NONEXISTENT0000000000000000000000000000', 'test')
+      end.to raise_error(/public key .* not found/)
     end
 
     it 'encrypts different messages differently' do
-      encrypted1 = PgpAuth.encrypt_for(@fingerprint, "message1")
-      encrypted2 = PgpAuth.encrypt_for(@fingerprint, "message2")
-      
+      encrypted1 = PgpAuth.encrypt_for(@fingerprint, 'message1')
+      encrypted2 = PgpAuth.encrypt_for(@fingerprint, 'message2')
+
       expect(encrypted1).not_to eq(encrypted2)
     end
   end

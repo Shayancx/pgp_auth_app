@@ -1,6 +1,7 @@
 # frozen_string_literal: true
-require "gpgme"
-require "securerandom"
+
+require 'gpgme'
+require 'securerandom'
 
 module PgpAuth
   CRYPTO = GPGME::Crypto.new(always_trust: true)

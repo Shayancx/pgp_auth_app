@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'spec_helper'
 
 RSpec.describe App do
@@ -29,7 +31,7 @@ RSpec.describe App do
         4.times do
           post '/register', username: 'test', password: 'pass', public_key: 'key'
         end
-        
+
         get '/register'
         expect(last_response.body).to include('Too many registration attempts')
       end
@@ -45,20 +47,20 @@ RSpec.describe App do
       end
 
       it 'creates unverified account with valid data' do
-        expect {
+        expect do
           post '/register', valid_params
-        }.to change { DB[:accounts].count }.by(1)
-        
+        end.to change { DB[:accounts].count }.by(1)
+
         expect(last_response.status).to eq(302)
         expect(last_response.location).to include('/verify-pgp')
-        
+
         account = DB[:accounts].order(:id).last
         expect(account[:verified]).to be false
       end
 
       it 'rejects empty username' do
         post '/register', valid_params.merge(username: '')
-        
+
         expect(last_response.status).to eq(302)
         follow_redirect!
         expect(last_response.body).to include('All fields are required')
@@ -66,14 +68,14 @@ RSpec.describe App do
 
       it 'rejects short username' do
         post '/register', valid_params.merge(username: 'ab')
-        
+
         follow_redirect!
         expect(last_response.body).to include('Username must be between 3 and 50 characters')
       end
 
       it 'rejects short password' do
         post '/register', valid_params.merge(password: 'short')
-        
+
         follow_redirect!
         expect(last_response.body).to include('Password must be at least 8 characters')
       end
@@ -81,7 +83,7 @@ RSpec.describe App do
       it 'rejects duplicate username' do
         post '/register', valid_params
         clear_cookies
-        
+
         post '/register', valid_params
         follow_redirect!
         expect(last_response.body).to include('Username already taken')
@@ -89,7 +91,7 @@ RSpec.describe App do
 
       it 'rejects invalid PGP key' do
         post '/register', valid_params.merge(public_key: 'invalid key')
-        
+
         follow_redirect!
         expect(last_response.body).to include('Invalid PGP key')
       end
@@ -99,7 +101,7 @@ RSpec.describe App do
           post '/register', valid_params.merge(username: "user#{i}")
           clear_cookies
         end
-        
+
         follow_redirect!
         expect(last_response.body).to include('Too many registration attempts')
       end
@@ -125,7 +127,7 @@ RSpec.describe App do
         it 'redirects if no pending registration' do
           clear_cookies
           get '/verify-pgp'
-          
+
           expect(last_response.status).to eq(302)
           follow_redirect!
           expect(last_response.body).to include('No pending registration found')
@@ -135,26 +137,26 @@ RSpec.describe App do
       describe 'POST /verify-pgp' do
         it 'verifies account with correct code' do
           get '/verify-pgp'
-          encrypted = last_response.body.match(/<pre class="encrypted-text">(.*?)<\/pre>/m)[1]
-          
+          last_response.body.match(%r{<pre class="encrypted-text">(.*?)</pre>}m)[1]
+
           # In real scenario, would decrypt with private key
           # For testing, extract from DB
           account_id = rack_mock_session.cookie_jar['rack.session']['unverified_account_id']
           account = DB[:accounts].where(id: account_id).first
           code = account[:verification_code]
-          
+
           post '/verify-pgp', code: code
-          
+
           expect(last_response.status).to eq(302)
           expect(last_response.location).to include('/dashboard')
-          
+
           account = DB[:accounts].where(id: account_id).first
           expect(account[:verified]).to be true
         end
 
         it 'rejects incorrect code' do
           post '/verify-pgp', code: 'wrong_code'
-          
+
           follow_redirect!
           expect(last_response.body).to include('Incorrect code')
         end
@@ -187,23 +189,23 @@ RSpec.describe App do
       describe 'POST /login' do
         it 'proceeds to password with valid username' do
           post '/login', username: 'testuser'
-          
+
           expect(last_response.status).to eq(302)
           expect(last_response.location).to include('/login-password')
         end
 
         it 'rejects invalid username' do
           post '/login', username: 'nonexistent'
-          
+
           follow_redirect!
           expect(last_response.body).to include('Invalid username')
         end
 
         it 'redirects to PGP-only for flagged accounts' do
           DB[:accounts].where(id: account).update(pgp_only_mode: true)
-          
+
           post '/login', username: 'testuser'
-          
+
           expect(last_response.location).to include('/login-pgp-only')
         end
       end
@@ -224,14 +226,14 @@ RSpec.describe App do
       describe 'POST /login-password' do
         it 'proceeds to 2FA with correct password' do
           post '/login-password', password: 'password123'
-          
+
           expect(last_response.status).to eq(302)
           expect(last_response.location).to include('/pgp-2fa')
         end
 
         it 'rejects incorrect password' do
           post '/login-password', password: 'wrong'
-          
+
           follow_redirect!
           expect(last_response.body).to include('Invalid password')
         end
@@ -241,10 +243,10 @@ RSpec.describe App do
           9.times do
             post '/login-password', password: 'wrong'
           end
-          
+
           # 10th failure triggers PGP-only
           post '/login-password', password: 'wrong'
-          
+
           expect(last_response.location).to include('/login-pgp-only')
           follow_redirect!
           expect(last_response.body).to include('Too many password failures')
@@ -270,20 +272,20 @@ RSpec.describe App do
       describe 'POST /pgp-2fa' do
         it 'logs in with correct code' do
           get '/pgp-2fa'
-          
+
           # Extract challenge from DB
           account_id = rack_mock_session.cookie_jar['rack.session']['pending_account_id']
           challenge = DB[:challenges].where(account_id: account_id).order(:id).last
-          
+
           post '/pgp-2fa', code: challenge[:code]
-          
+
           expect(last_response.status).to eq(302)
           expect(last_response.location).to include('/dashboard')
         end
 
         it 'rejects incorrect code' do
           post '/pgp-2fa', code: 'wrong_code'
-          
+
           follow_redirect!
           expect(last_response.body).to include('Incorrect code')
         end
@@ -308,16 +310,16 @@ RSpec.describe App do
       describe 'POST /login-pgp-only' do
         it 'authenticates and resets pgp-only mode' do
           get '/login-pgp-only'
-          
+
           # Get challenge code
           account_id = rack_mock_session.cookie_jar['rack.session']['pgp_only_account_id']
           challenge = DB[:challenges].where(account_id: account_id).order(:id).last
-          
+
           post '/login-pgp-only', code: challenge[:code]
-          
+
           expect(last_response.status).to eq(302)
           expect(last_response.location).to include('/dashboard')
-          
+
           # Check pgp-only mode was reset
           updated = DB[:accounts].where(id: account).first
           expect(updated[:pgp_only_mode]).to be false
@@ -345,7 +347,7 @@ RSpec.describe App do
       post '/login', username: 'authuser'
       post '/login-password', password: 'password123'
       get '/pgp-2fa'
-      
+
       challenge = DB[:challenges].where(account_id: account_id).order(:id).last
       post '/pgp-2fa', code: challenge[:code]
     end
@@ -361,7 +363,7 @@ RSpec.describe App do
       it 'redirects when not logged in' do
         clear_cookies
         get '/dashboard'
-        
+
         expect(last_response.status).to eq(302)
         expect(last_response.location).to include('/login')
       end
@@ -380,9 +382,9 @@ RSpec.describe App do
       it 'revokes specified session' do
         # Create another session
         token = SessionManager.create_session(account_id, '192.168.1.1', 'Other Browser')
-        
+
         post '/sessions/revoke', token: token
-        
+
         expect(last_response.status).to eq(302)
         follow_redirect!
         expect(last_response.body).to include('Session revoked successfully')
@@ -411,10 +413,10 @@ RSpec.describe App do
       describe 'POST /logout' do
         it 'logs out and revokes session' do
           post '/logout'
-          
+
           expect(last_response.status).to eq(302)
           expect(last_response.location).to include('/')
-          
+
           # Try accessing protected route
           get '/dashboard'
           expect(last_response.status).to eq(302)
@@ -429,7 +431,7 @@ RSpec.describe App do
         # Manually craft request without middleware
         post_request = Rack::MockRequest.new(app)
         response = post_request.post('/login', params: { username: 'test' })
-        
+
         expect(response.status).to eq(403)
       end
     end
@@ -445,20 +447,20 @@ RSpec.describe App do
           verified: true,
           session_timeout_hours: 1
         )
-        
+
         post '/login', username: 'expiretest'
         post '/login-password', password: 'password123'
         get '/pgp-2fa'
         challenge = DB[:challenges].where(account_id: account_id).order(:id).last
         post '/pgp-2fa', code: challenge[:code]
-        
+
         # Access works initially
         get '/dashboard'
         expect(last_response).to be_ok
-        
+
         # Fast forward past timeout
         Timecop.travel(Time.now + 2 * 3600)
-        
+
         # Session should be invalid
         get '/dashboard'
         expect(last_response.status).to eq(302)

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'simplecov'
 SimpleCov.start do
   add_filter '/spec/'
@@ -72,10 +74,10 @@ RSpec.configure do |config|
   def login_as(account)
     post '/login', username: account[:username]
     post '/login-password', password: 'password123'
-    
+
     # Get and solve PGP challenge
     get '/pgp-2fa'
-    encrypted = last_response.body.match(/<pre class="encrypted-text">(.*?)<\/pre>/m)[1]
+    encrypted = last_response.body.match(%r{<pre class="encrypted-text">(.*?)</pre>}m)[1]
     code = decrypt_challenge(CGI.unescapeHTML(encrypted))
     post '/pgp-2fa', code: code
   end

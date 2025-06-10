@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 Sequel.migration do
   change do
     create_table :accounts do
@@ -10,7 +12,7 @@ Sequel.migration do
     create_table :challenges do
       primary_key :id
       foreign_key :account_id, :accounts
-      String  :code,        null: false
+      String :code, null: false
       DateTime :expires_at, null: false
       DateTime :created_at, null: false, default: Sequel::CURRENT_TIMESTAMP
     end

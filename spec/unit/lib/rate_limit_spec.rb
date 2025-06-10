@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'spec_helper'
 
 RSpec.describe RateLimit do
@@ -32,7 +34,7 @@ RSpec.describe RateLimit do
     context 'with expired block' do
       it 'returns false after block expires' do
         5.times { RateLimit.record_attempt(identifier, action) }
-        
+
         # Fast forward past block time
         Timecop.travel(Time.now + 3600)
         expect(RateLimit.blocked?(identifier, action)).to be false
@@ -42,26 +44,26 @@ RSpec.describe RateLimit do
 
   describe '.record_attempt' do
     it 'creates new record for first attempt' do
-      expect {
+      expect do
         RateLimit.record_attempt(identifier, action)
-      }.to change { DB[:rate_limits].count }.by(1)
+      end.to change { DB[:rate_limits].count }.by(1)
     end
 
     it 'increments attempts within window' do
       RateLimit.record_attempt(identifier, action)
       RateLimit.record_attempt(identifier, action)
-      
+
       record = DB[:rate_limits].where(identifier: identifier, action: action).first
       expect(record[:attempts]).to eq(2)
     end
 
     it 'resets attempts outside window' do
       RateLimit.record_attempt(identifier, action)
-      
+
       # Travel past window
       Timecop.travel(Time.now + 3600)
       RateLimit.record_attempt(identifier, action)
-      
+
       record = DB[:rate_limits].where(identifier: identifier, action: action).first
       expect(record[:attempts]).to eq(1)
     end
@@ -69,7 +71,7 @@ RSpec.describe RateLimit do
     it 'applies exponential backoff' do
       # Exceed limit
       6.times { RateLimit.record_attempt(identifier, action) }
-      
+
       record = DB[:rate_limits].where(identifier: identifier, action: action).first
       expect(record[:blocked_until]).to be > Time.now
     end
@@ -82,7 +84,7 @@ RSpec.describe RateLimit do
 
     it 'returns seconds until unblock' do
       6.times { RateLimit.record_attempt(identifier, action) }
-      
+
       time_remaining = RateLimit.time_until_retry(identifier, action)
       expect(time_remaining).to be > 0
     end
@@ -90,7 +92,7 @@ RSpec.describe RateLimit do
 
   describe '.pgp_only_required?' do
     let(:username) { 'testuser' }
-    
+
     context 'with no account' do
       it 'returns false' do
         expect(RateLimit.pgp_only_required?(username)).to be false
@@ -128,7 +130,7 @@ RSpec.describe RateLimit do
 
   describe '.record_password_failure' do
     let(:username) { 'testuser' }
-    
+
     before do
       DB[:accounts].insert(
         username: username,
@@ -143,7 +145,7 @@ RSpec.describe RateLimit do
 
     it 'increments failure count' do
       RateLimit.record_password_failure(username)
-      
+
       account = DB[:accounts].where(username: username).first
       expect(account[:failed_password_count]).to eq(1)
     end
@@ -151,7 +153,7 @@ RSpec.describe RateLimit do
     it 'triggers PGP-only mode at threshold' do
       9.times { RateLimit.record_password_failure(username) }
       expect(RateLimit.record_password_failure(username)).to be true
-      
+
       account = DB[:accounts].where(username: username).first
       expect(account[:pgp_only_mode]).to be true
     end
@@ -159,7 +161,7 @@ RSpec.describe RateLimit do
 
   describe '.reset_password_failures' do
     let(:username) { 'testuser' }
-    
+
     before do
       DB[:accounts].insert(
         username: username,
@@ -174,7 +176,7 @@ RSpec.describe RateLimit do
 
     it 'resets failure count and pgp_only_mode' do
       RateLimit.reset_password_failures(username)
-      
+
       account = DB[:accounts].where(username: username).first
       expect(account[:failed_password_count]).to eq(0)
       expect(account[:pgp_only_mode]).to be false
@@ -188,31 +190,31 @@ RSpec.describe RateLimit do
         identifier: identifier,
         action: action,
         attempts: 1,
-        first_attempt_at: Time.now - 86401,
-        last_attempt_at: Time.now - 86401
+        first_attempt_at: Time.now - 86_401,
+        last_attempt_at: Time.now - 86_401
       )
-      
-      expect {
+
+      expect do
         RateLimit.cleanup_old_records
-      }.to change { DB[:rate_limits].count }.by(-1)
+      end.to change { DB[:rate_limits].count }.by(-1)
     end
   end
 
   describe '.format_time_remaining' do
     it 'formats seconds correctly' do
-      expect(RateLimit.format_time_remaining(30)).to eq("30 seconds")
+      expect(RateLimit.format_time_remaining(30)).to eq('30 seconds')
     end
 
     it 'formats minutes correctly' do
-      expect(RateLimit.format_time_remaining(120)).to eq("2 minutes")
+      expect(RateLimit.format_time_remaining(120)).to eq('2 minutes')
     end
 
     it 'formats hours correctly' do
-      expect(RateLimit.format_time_remaining(3600)).to eq("1 hours")
+      expect(RateLimit.format_time_remaining(3600)).to eq('1 hours')
     end
 
     it 'formats hours and minutes correctly' do
-      expect(RateLimit.format_time_remaining(3900)).to eq("1 hours and 5 minutes")
+      expect(RateLimit.format_time_remaining(3900)).to eq('1 hours and 5 minutes')
     end
   end
 end

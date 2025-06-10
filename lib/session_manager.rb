@@ -1,47 +1,46 @@
 # frozen_string_literal: true
-require_relative "../config/database"
-require "securerandom"
-require "json"
+
+require_relative '../config/database'
+require 'securerandom'
+require 'json'
 
 module SessionManager
   DEFAULT_TIMEOUT_HOURS = 24
   MAX_CONCURRENT_SESSIONS = 5
-  
+
   module_function
 
   # Create a new session
   def create_session(account_id, ip_address, user_agent)
     cleanup_expired_sessions
-    
+
     account = DB[:accounts].where(id: account_id).first
     return nil unless account
-    
+
     # Limit concurrent sessions
     active_count = DB[:user_sessions]
-      .where(account_id: account_id, revoked: false)
-      .where { expires_at > Time.now }
-      .count
-      
+                   .where(account_id: account_id, revoked: false)
+                   .where { expires_at > Time.now }
+                   .count
+
     max_sessions = account[:max_concurrent_sessions] || MAX_CONCURRENT_SESSIONS
-    
+
     if active_count >= max_sessions
       # Revoke oldest session
       oldest = DB[:user_sessions]
-        .where(account_id: account_id, revoked: false)
-        .where { expires_at > Time.now }
-        .order(:last_accessed_at)
-        .first
-        
-      if oldest
-        revoke_session(oldest[:session_token], 'max_sessions_exceeded')
-      end
+               .where(account_id: account_id, revoked: false)
+               .where { expires_at > Time.now }
+               .order(:last_accessed_at)
+               .first
+
+      revoke_session(oldest[:session_token], 'max_sessions_exceeded') if oldest
     end
-    
+
     # Create new session
     token = SecureRandom.hex(32)
     timeout_hours = account[:session_timeout_hours] || DEFAULT_TIMEOUT_HOURS
     expires_at = Time.now + (timeout_hours * 3600)
-    
+
     DB[:user_sessions].insert(
       account_id: account_id,
       session_token: token,
@@ -49,26 +48,26 @@ module SessionManager
       user_agent: user_agent&.slice(0, 1000),
       expires_at: expires_at
     )
-    
+
     log_event(account_id, 'login', ip_address, user_agent, {
-      session_token: token[0..8] + "...", # Partial token for audit
-      expires_at: expires_at
-    })
-    
+                session_token: "#{token[0..8]}...", # Partial token for audit
+                expires_at: expires_at
+              })
+
     token
   end
 
   # Validate and refresh a session
   def validate_session(session_token, ip_address, user_agent)
     return nil unless session_token
-    
+
     session = DB[:user_sessions]
-      .where(session_token: session_token, revoked: false)
-      .where { expires_at > Time.now }
-      .first
-      
+              .where(session_token: session_token, revoked: false)
+              .where { expires_at > Time.now }
+              .first
+
     return nil unless session
-    
+
     # Update last accessed time
     DB[:user_sessions]
       .where(id: session[:id])
@@ -77,7 +76,7 @@ module SessionManager
         ip_address: ip_address&.slice(0, 45),
         user_agent: user_agent&.slice(0, 1000)
       )
-    
+
     session[:account_id]
   end
 
@@ -85,16 +84,16 @@ module SessionManager
   def revoke_session(session_token, reason = 'user_logout')
     session = DB[:user_sessions].where(session_token: session_token).first
     return false unless session
-    
+
     DB[:user_sessions]
       .where(id: session[:id])
       .update(revoked: true, revoked_at: Time.now)
-    
+
     log_event(session[:account_id], 'session_revoked', nil, nil, {
-      reason: reason,
-      session_token: session_token[0..8] + "..."
-    })
-    
+                reason: reason,
+                session_token: "#{session_token[0..8]}..."
+              })
+
     true
   end
 
@@ -102,14 +101,14 @@ module SessionManager
   def revoke_all_sessions(account_id, except_token = nil)
     query = DB[:user_sessions].where(account_id: account_id, revoked: false)
     query = query.exclude(session_token: except_token) if except_token
-    
+
     count = query.update(revoked: true, revoked_at: Time.now)
-    
+
     log_event(account_id, 'all_sessions_revoked', nil, nil, {
-      revoked_count: count,
-      except_token: except_token ? (except_token[0..8] + "...") : nil
-    })
-    
+                revoked_count: count,
+                except_token: except_token ? "#{except_token[0..8]}..." : nil
+              })
+
     count
   end
 
@@ -125,14 +124,14 @@ module SessionManager
   # Clean up expired sessions
   def cleanup_expired_sessions
     expired_count = DB[:user_sessions]
-      .where { expires_at < Time.now }
-      .update(revoked: true, revoked_at: Time.now)
-    
+                    .where { expires_at < Time.now }
+                    .update(revoked: true, revoked_at: Time.now)
+
     # Also clean up old audit logs (keep 90 days)
     old_logs = DB[:audit_logs]
-      .where { created_at < Time.now - (90 * 24 * 3600) }
-      .delete
-    
+               .where { created_at < Time.now - (90 * 24 * 3600) }
+               .delete
+
     { expired_sessions: expired_count, old_logs: old_logs }
   end
 
@@ -160,7 +159,7 @@ module SessionManager
   def session_fingerprint(session)
     browser = parse_user_agent(session[:user_agent])
     location = session[:ip_address]
-    
+
     {
       browser: browser,
       location: location,
@@ -173,19 +172,19 @@ module SessionManager
   private
 
   def parse_user_agent(user_agent)
-    return "Unknown" unless user_agent
-    
+    return 'Unknown' unless user_agent
+
     case user_agent
     when /Chrome/i
-      "Chrome"
+      'Chrome'
     when /Firefox/i
-      "Firefox"
+      'Firefox'
     when /Safari/i
-      "Safari"
+      'Safari'
     when /Edge/i
-      "Edge"
+      'Edge'
     else
-      "Other Browser"
+      'Other Browser'
     end
   end
 end

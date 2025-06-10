@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 Sequel.migration do
   change do
     create_table :rate_limits do
@@ -8,8 +10,8 @@ Sequel.migration do
       DateTime :first_attempt_at, null: false, default: Sequel::CURRENT_TIMESTAMP
       DateTime :last_attempt_at, null: false, default: Sequel::CURRENT_TIMESTAMP
       DateTime :blocked_until
-      
-      index [:identifier, :action], name: :idx_rate_limits_lookup
+
+      index %i[identifier action], name: :idx_rate_limits_lookup
       index :last_attempt_at, name: :idx_rate_limits_cleanup
     end
   end
