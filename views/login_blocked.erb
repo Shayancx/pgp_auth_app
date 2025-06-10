@@ -1,0 +1,13 @@
+<div class="security-icon">⏰</div>
+<h2>Login Temporarily Blocked</h2>
+<p class="subtitle">Too many attempts detected</p>
+
+<div class="error"><%= @blocked_message %></div>
+
+<div class="form-container">
+  <p>Your IP address has been temporarily blocked due to too many login attempts.</p>
+  <p>This is a security measure to protect against brute force attacks.</p>
+  <p>Please wait for the timeout period to expire before trying again.</p>
+</div>
+
+<a href="/" class="back-link">← Back to home</a>

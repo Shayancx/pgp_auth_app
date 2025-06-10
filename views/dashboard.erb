@@ -9,15 +9,23 @@
 <h2>Secure Dashboard</h2>
 
 <div class="welcome-container">
-  <p>You've successfully authenticated using two-factor authentication with PGP cryptographic verification.</p>
+  <p>You've successfully authenticated using cryptographic verification.</p>
   
   <div class="security-info">
-    <strong>✓ Password Protected:</strong> Primary authentication<br>
-    <strong>✓ PGP 2FA Enabled:</strong> Cryptographic second factor<br>
-    <strong>✓ Zero-Knowledge:</strong> Server stores no secrets
+    <strong>✓ Account Verified:</strong> PGP key authentication<br>
+    <strong>✓ Enhanced Security:</strong> 
+    <% if @account[:pgp_only_mode] %>
+      PGP-only mode active
+    <% else %>
+      Password + PGP 2FA enabled
+    <% end %><br>
+    <strong>✓ Zero-Knowledge:</strong> Server stores no secrets<br>
+    <% if @account[:failed_password_count] > 0 %>
+      <strong>⚠ Password Failures:</strong> <%= @account[:failed_password_count] %>/10 before PGP-only mode
+    <% end %>
   </div>
   
-  <p>Your account is protected by industry-standard security measures.</p>
+  <p>Your account is protected by industry-standard security measures with progressive security escalation.</p>
 </div>
 
 <a href="/logout" class="logout-btn">Sign Out</a>

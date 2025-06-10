@@ -1,0 +1,12 @@
+<div class="security-icon">⏰</div>
+<h2>PGP Authentication Blocked</h2>
+<p class="subtitle">Too many incorrect attempts</p>
+
+<div class="error"><%= @blocked_message %></div>
+
+<div class="form-container">
+  <p>Too many incorrect PGP authentication attempts have been detected.</p>
+  <p>Please wait for the timeout period to expire before trying again.</p>
+</div>
+
+<a href="/login" class="back-link">← Start over</a>
