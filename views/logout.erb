@@ -4,7 +4,7 @@
 
 <div class="form-container">
   <form method="post" action="/logout">
-    <%= csrf_tag if defined?(csrf_tag) %>
+    <%= csrf_tag %>
     <button type="submit" class="btn">Sign Out</button>
   </form>
   <div class="help-text">

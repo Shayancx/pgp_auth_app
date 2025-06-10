@@ -32,7 +32,7 @@
         </div>
         <% unless SessionManager.token_matches_session?(@current_token, session[:session_token]) %>
           <form method="post" action="/sessions/revoke" class="inline-form">
-            <%= csrf_tag if defined?(csrf_tag) %>
+            <%= csrf_tag %>
             <input type="hidden" name="token" value="<%= session[:session_token] %>">
             <button type="submit" class="btn-danger btn-small" onclick="return confirm('Revoke this session?')">Revoke</button>
           </form>
@@ -42,7 +42,7 @@
     
     <% if @sessions.length > 1 %>
       <form method="post" action="/sessions/revoke_all" class="revoke-all-form">
-        <%= csrf_tag if defined?(csrf_tag) %>
+        <%= csrf_tag %>
         <button type="submit" class="btn-danger" onclick="return confirm('Revoke all other sessions? You will remain logged in on this device.')">Revoke All Other Sessions</button>
       </form>
     <% end %>

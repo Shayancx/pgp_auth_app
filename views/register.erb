@@ -5,7 +5,7 @@
 <% end %>
 <div class="form-container">
   <form method="post">
-    <%= csrf_tag if defined?(csrf_tag) %>
+    <%= csrf_tag %>
     <div class="form-section">
       <h3>Account Information</h3>
       <input type="text" name="username" placeholder="Username" required autocomplete="username">

@@ -34,6 +34,9 @@ module ApplicationHelper
   end
 
   # Generate CSRF protection token tag
+  def csrf_tag
+    Rack::Csrf.tag(env)
+  end
 
   # Format rate limit message with time remaining
   def rate_limit_message(action, identifier)

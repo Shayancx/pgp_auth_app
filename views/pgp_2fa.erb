@@ -19,7 +19,7 @@
 <div class="form-container">
   <div class="instructions">Enter the decrypted code:</div>
   <form method="post">
-    <%= csrf_tag if defined?(csrf_tag) %>
+    <%= csrf_tag %>
     <input type="text" name="code" placeholder="Enter decrypted code" required autocomplete="off">
     <br>
     <button type="submit" class="btn">Verify</button>

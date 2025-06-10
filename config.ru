@@ -36,28 +36,30 @@ use Rack::Session::Cookie,
     path: '/',
     defer: true
 
-# Enhanced CSRF Protection
+# CSRF Protection with lenient development settings
 require 'rack/csrf'
 use Rack::Csrf,
-    raise: ENV['RACK_ENV'] == 'production',
-    skip: lambda { |req| 
-      req.get? || 
+    raise: false,  # Don't raise in development, just return 403
+    skip_if: lambda { |req| 
+      # Skip CSRF for GET, HEAD, OPTIONS requests
+      %w[GET HEAD OPTIONS].include?(req.request_method) ||
       req.path == '/health' ||
-      req.path.start_with?('/public')
+      req.path.start_with?('/public') ||
+      req.path.start_with?('/assets')
     },
-    check_only: ['POST:*', 'PUT:*', 'PATCH:*', 'DELETE:*'],
-    key: 'csrf.token'
+    key: 'csrf.token',
+    header: 'X-CSRF-Token',
+    field: 'authenticity_token'  # Standard Rails field name
 
-# Basic Rack::Protection (only the ones that work)
+# Rack::Protection middleware (without Base class)
 require 'rack/protection'
-use Rack::Protection::Base
 use Rack::Protection::EscapedParams
 use Rack::Protection::FormToken
 use Rack::Protection::FrameOptions
 use Rack::Protection::PathTraversal
 use Rack::Protection::XSSHeader
 
-# Custom security headers
+# Custom security headers middleware
 use(Class.new do
   def initialize(app)
     @app = app
