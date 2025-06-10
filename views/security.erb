@@ -80,7 +80,7 @@
                 when 'session_revoked' then 'event-warning'
                 else 'event-info'
                 end %>">
-            <%= entry[:event_type].gsub('_', ' ').titleize %>
+            <%= entry[:event_type].gsub('_', ' ').split.map(&:capitalize).join(" ") %>
           </div>
           <div class="audit-details">
             IP: <%= entry[:ip_address] || 'Unknown' %>

@@ -98,7 +98,7 @@ module SessionManager
       DB[:user_sessions]
         .where(account_id: account_id, revoked: false)
         .where { expires_at > Time.now }
-        .order(:last_accessed_at.desc)
+        .reverse(:last_accessed_at)
         .all
     end
 
@@ -130,7 +130,7 @@ module SessionManager
     def get_audit_log(account_id, limit = 50)
       DB[:audit_logs]
         .where(account_id: account_id)
-        .order(:created_at.desc)
+        .reverse(:created_at)
         .limit(limit)
         .all
     end
