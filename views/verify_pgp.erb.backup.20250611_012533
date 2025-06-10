@@ -1,0 +1,39 @@
+<div class="security-icon">🔑</div>
+<h2>Verify Your PGP Key</h2>
+<p class="subtitle">Prove you own the private key to complete registration</p>
+
+<div class="step-indicator">
+  <span class="step">✓</span>
+  <span class="step active">2</span>
+  <span class="step">3</span>
+</div>
+
+<div class="user-info">
+  <div class="label">Registering as</div>
+  <div class="username"><%= CGI.escapeHTML(@account[:username]) %></div>
+</div>
+
+<% if flash['error'] %>
+  <div class="error"><%= flash['error'] %></div>
+<% end %>
+
+<div class="challenge-container">
+  <div class="instructions">
+    <strong>Important:</strong> To complete your registration, you must prove you own the private key 
+    corresponding to the public key you provided. Decrypt this message with your PGP private key:
+  </div>
+  <pre class="encrypted-text"><%= CGI.escapeHTML(@encrypted) %></pre>
+</div>
+
+<div class="form-container">
+  <div class="instructions">Enter the decrypted verification code:</div>
+  <form method="post">
+    <%= csrf_tag %>
+    <input type="text" name="code" placeholder="Enter decrypted code" required autocomplete="off">
+    <br>
+    <button type="submit" class="btn">Verify & Complete Registration</button>
+  </form>
+  <div class="help-text">
+    This one-time verification ensures only you can use this PGP key for authentication.
+  </div>
+</div>

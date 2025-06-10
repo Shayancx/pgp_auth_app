@@ -1,0 +1,37 @@
+<div class="security-icon">🔒</div>
+<h2>PGP-Only Authentication</h2>
+<p class="subtitle">This account requires cryptographic verification</p>
+
+<div class="user-info">
+  <div class="label">Authenticating as</div>
+  <div class="username"><%= CGI.escapeHTML(@account[:username]) %></div>
+</div>
+
+<% if flash['error'] %>
+  <div class="error"><%= flash['error'] %></div>
+<% end %>
+
+<% if flash['notice'] %>
+  <div class="notice"><%= flash['notice'] %></div>
+<% end %>
+
+<div class="challenge-container">
+  <div class="instructions">
+    <strong>Enhanced Security Mode:</strong> Too many password failures detected. 
+    This account now requires PGP-only authentication. Decrypt this challenge with your private key:
+  </div>
+  <pre class="encrypted-text"><%= CGI.escapeHTML(@encrypted) %></pre>
+</div>
+
+<div class="form-container">
+  <div class="instructions">Enter the decrypted code:</div>
+  <form method="post">
+    <%= csrf_tag %>
+    <input type="text" name="code" placeholder="Enter decrypted code" required autocomplete="off">
+    <br>
+    <button type="submit" class="btn">Authenticate</button>
+  </form>
+  <div class="help-text">
+    Successful authentication will restore normal password login.
+  </div>
+</div>

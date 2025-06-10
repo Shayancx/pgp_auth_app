@@ -122,43 +122,14 @@ module PgpAuth
     derived_key.unpack1('H*')
   end
 
-  # FIXED: Enhanced key validation with correct GPGME method names
+  # Enhanced key validation
   def validate_key_security(key)
-    # Use correct method names for current GPGME version
-    begin
-      # Check if key is expired (method name: 'expired' not 'expired?')
-      if key.respond_to?(:expired) && key.expired
-        raise 'PGP key is expired'
-      elsif key.respond_to?(:expired?) && key.expired?
-        raise 'PGP key is expired'
-      end
+    raise 'PGP key is expired' if key.expired?
+    raise 'PGP key is revoked' if key.revoked?
+    raise 'PGP key is invalid' if key.invalid?
+    raise 'PGP key is disabled' if key.disabled?
 
-      # Check if key is revoked (try both method names)
-      if key.respond_to?(:revoked) && key.revoked
-        raise 'PGP key is revoked'
-      elsif key.respond_to?(:revoked?) && key.revoked?
-        raise 'PGP key is revoked'
-      end
-
-      # Check if key is invalid (try both method names)
-      if key.respond_to?(:invalid) && key.invalid
-        raise 'PGP key is invalid'
-      elsif key.respond_to?(:invalid?) && key.invalid?
-        raise 'PGP key is invalid'
-      end
-
-      # Check if key is disabled (try both method names)
-      if key.respond_to?(:disabled) && key.disabled
-        raise 'PGP key is disabled'
-      elsif key.respond_to?(:disabled?) && key.disabled?
-        raise 'PGP key is disabled'
-      end
-    rescue NoMethodError => e
-      puts "Warning: GPGME method not available: #{e.message}" if ENV['RACK_ENV'] == 'development'
-      # Continue with other validations if methods don't exist
-    end
-
-    # Check key age (safer approach)
+    # Check key age
     if key.primary_subkey&.timestamp
       key_age_years = (Time.now - key.primary_subkey.timestamp) / (365.25 * 24 * 3600)
       raise "PGP key is too old (#{key_age_years.round(1)} years)" if key_age_years > MAX_KEY_AGE_YEARS
@@ -167,94 +138,44 @@ module PgpAuth
     # Validate key algorithm and size
     subkey = key.primary_subkey
     if subkey
-      # Safely get algorithm information
-      begin
-        algorithm = subkey.pubkey_algo_letter if subkey.respond_to?(:pubkey_algo_letter)
-        length = subkey.length if subkey.respond_to?(:length)
+      algorithm = subkey.pubkey_algo_letter
+      length = subkey.length
 
-        if algorithm && !ALLOWED_ALGORITHMS.include?(algorithm)
-          raise "Unsupported algorithm: #{algorithm}"
-        end
-        
-        if length && length < MIN_KEY_SIZE
-          raise "Key size too small: #{length} bits (minimum #{MIN_KEY_SIZE})"
-        end
-      rescue NoMethodError => e
-        puts "Warning: Could not check key algorithm: #{e.message}" if ENV['RACK_ENV'] == 'development'
-        # Continue without algorithm validation
-      end
+      raise "Unsupported algorithm: #{algorithm}" unless ALLOWED_ALGORITHMS.include?(algorithm)
+      raise "Key size too small: #{length} bits (minimum #{MIN_KEY_SIZE})" if length < MIN_KEY_SIZE
     end
 
-    # Check for valid user IDs (safer approach)
-    begin
-      if key.uids.empty?
-        raise 'PGP key has no valid user IDs'
-      end
-      
-      # Check for at least one valid UID (if validity method exists)
-      valid_uids = key.uids.select do |uid|
-        begin
-          uid.respond_to?(:validity) ? (uid.validity == :valid || uid.validity == :ultimate) : true
-        rescue
-          true # Assume valid if we can't check
-        end
-      end
-      
-      if valid_uids.empty?
-        puts "Warning: No UIDs with confirmed validity found" if ENV['RACK_ENV'] == 'development'
-      end
-    rescue NoMethodError => e
-      puts "Warning: Could not validate UIDs: #{e.message}" if ENV['RACK_ENV'] == 'development'
-      # Continue without UID validation
-    end
+    # Check for valid user IDs
+    raise 'PGP key has no valid user IDs' if key.uids.empty?
+    raise 'PGP key has no valid signatures' unless key.uids.any? { |uid| uid.validity == :valid }
 
     # Additional security checks
     validate_key_capabilities(key)
     validate_key_algorithms(key)
   end
 
-  # Validate key capabilities (safer approach)
+  # Validate key capabilities
   def validate_key_capabilities(key)
-    begin
-      primary = key.primary_subkey
-      
-      if primary&.respond_to?(:can_sign?) && !primary.can_sign?
-        raise 'Primary key must support signing'
-      end
-      
-      # Ensure we have encryption capability
-      encryption_key = key.subkeys.find do |sk|
-        sk.respond_to?(:can_encrypt?) ? sk.can_encrypt? : true
-      end
-      
-      unless encryption_key
-        raise 'Key must have encryption capability'
-      end
-    rescue NoMethodError => e
-      puts "Warning: Could not validate key capabilities: #{e.message}" if ENV['RACK_ENV'] == 'development'
-      # Continue without capability validation
-    end
+    primary = key.primary_subkey
+    raise 'Primary key must support signing' unless primary&.can_sign?
+    
+    # Ensure we have encryption capability
+    encryption_key = key.subkeys.find { |sk| sk.can_encrypt? }
+    raise 'Key must have encryption capability' unless encryption_key
   end
 
-  # Validate cryptographic algorithms (safer approach)
+  # Validate cryptographic algorithms
   def validate_key_algorithms(key)
-    begin
-      key.subkeys.each do |subkey|
-        next unless subkey.respond_to?(:pubkey_algo) && subkey.respond_to?(:length)
-        
-        # Check for weak algorithms
-        case subkey.pubkey_algo
-        when :dsa
-          raise 'DSA keys are not allowed' if subkey.length < 3072
-        when :rsa
-          raise 'RSA key too small' if subkey.length < MIN_KEY_SIZE
-        when :elgamal
-          puts 'Warning: ElGamal keys are not recommended' if ENV['RACK_ENV'] == 'development'
-        end
+    key.subkeys.each do |subkey|
+      # Check for weak algorithms
+      case subkey.pubkey_algo
+      when :dsa
+        raise 'DSA keys are not allowed' if subkey.length < 3072
+      when :rsa
+        raise 'RSA key too small' if subkey.length < MIN_KEY_SIZE
+      when :elgamal
+        raise 'ElGamal keys are not recommended'
       end
-    rescue NoMethodError => e
-      puts "Warning: Could not validate key algorithms: #{e.message}" if ENV['RACK_ENV'] == 'development'
-      # Continue without algorithm validation
     end
   end
 

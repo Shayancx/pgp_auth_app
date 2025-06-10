@@ -17,6 +17,20 @@ require_relative 'app/helpers/application_helper'
 class App < Roda
   include ApplicationHelper
 
+  # CSRF error handling
+  plugin :error_handler do |e|
+    case e
+    when Rack::Csrf::InvalidToken
+      @error_message = "Security token invalid. Please try again."
+      @error_type = "csrf"
+      view "error"
+    else
+      raise e unless ENV["RACK_ENV"] == "production"
+      @error_message = "An error occurred. Please try again."
+      view "error"
+    end
+  end
+
   plugin :flash
   plugin :render, engine: 'erb', views: 'views'
   plugin :public

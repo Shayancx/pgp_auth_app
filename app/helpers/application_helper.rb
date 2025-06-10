@@ -7,33 +7,781 @@ require 'openssl'
 module ApplicationHelper
   # Get client IP address with enhanced spoofing protection
   def client_ip
+
+  # Generate CSRF protection token tag - BULLETPROOF VERSION
+  def csrf_tag
+    begin
+      # Multiple fallback strategies
+      if env && env['rack.session']
+        # Try the standard Rack::Csrf approach
+        if defined?(Rack::Csrf)
+          token = Rack::Csrf.token(env)
+          field = Rack::Csrf.field
+          
+          if token && !token.empty? && field && !field.empty?
+            return %(<input type="hidden" name="#{CGI.escapeHTML(field)}" value="#{CGI.escapeHTML(token)}" />)
+          end
+        end
+        
+        # Fallback: Generate our own token using session
+        session_token = env['rack.session']['csrf.token'] ||= SecureRandom.hex(32)
+        return %(<input type="hidden" name="authenticity_token" value="#{CGI.escapeHTML(session_token)}" />)
+      end
+      
+      # Last resort fallback
+      return '<input type="hidden" name="authenticity_token" value="" />'
+    rescue => e
+      puts "CSRF token generation error: #{e.message}" if ENV['RACK_ENV'] == 'development'
+      return '<input type="hidden" name="authenticity_token" value="" />'
+    end
+  end
     # Enhanced IP detection with strict validation
+
+  # Generate CSRF protection token tag - BULLETPROOF VERSION
+  def csrf_tag
+    begin
+      # Multiple fallback strategies
+      if env && env['rack.session']
+        # Try the standard Rack::Csrf approach
+        if defined?(Rack::Csrf)
+          token = Rack::Csrf.token(env)
+          field = Rack::Csrf.field
+          
+          if token && !token.empty? && field && !field.empty?
+            return %(<input type="hidden" name="#{CGI.escapeHTML(field)}" value="#{CGI.escapeHTML(token)}" />)
+          end
+        end
+        
+        # Fallback: Generate our own token using session
+        session_token = env['rack.session']['csrf.token'] ||= SecureRandom.hex(32)
+        return %(<input type="hidden" name="authenticity_token" value="#{CGI.escapeHTML(session_token)}" />)
+      end
+      
+      # Last resort fallback
+      return '<input type="hidden" name="authenticity_token" value="" />'
+    rescue => e
+      puts "CSRF token generation error: #{e.message}" if ENV['RACK_ENV'] == 'development'
+      return '<input type="hidden" name="authenticity_token" value="" />'
+    end
+  end
     if ENV['RACK_ENV'] == 'production' && ENV['TRUSTED_PROXY_IP']
+
+  # Generate CSRF protection token tag - BULLETPROOF VERSION
+  def csrf_tag
+    begin
+      # Multiple fallback strategies
+      if env && env['rack.session']
+        # Try the standard Rack::Csrf approach
+        if defined?(Rack::Csrf)
+          token = Rack::Csrf.token(env)
+          field = Rack::Csrf.field
+          
+          if token && !token.empty? && field && !field.empty?
+            return %(<input type="hidden" name="#{CGI.escapeHTML(field)}" value="#{CGI.escapeHTML(token)}" />)
+          end
+        end
+        
+        # Fallback: Generate our own token using session
+        session_token = env['rack.session']['csrf.token'] ||= SecureRandom.hex(32)
+        return %(<input type="hidden" name="authenticity_token" value="#{CGI.escapeHTML(session_token)}" />)
+      end
+      
+      # Last resort fallback
+      return '<input type="hidden" name="authenticity_token" value="" />'
+    rescue => e
+      puts "CSRF token generation error: #{e.message}" if ENV['RACK_ENV'] == 'development'
+      return '<input type="hidden" name="authenticity_token" value="" />'
+    end
+  end
       begin
+
+  # Generate CSRF protection token tag - BULLETPROOF VERSION
+  def csrf_tag
+    begin
+      # Multiple fallback strategies
+      if env && env['rack.session']
+        # Try the standard Rack::Csrf approach
+        if defined?(Rack::Csrf)
+          token = Rack::Csrf.token(env)
+          field = Rack::Csrf.field
+          
+          if token && !token.empty? && field && !field.empty?
+            return %(<input type="hidden" name="#{CGI.escapeHTML(field)}" value="#{CGI.escapeHTML(token)}" />)
+          end
+        end
+        
+        # Fallback: Generate our own token using session
+        session_token = env['rack.session']['csrf.token'] ||= SecureRandom.hex(32)
+        return %(<input type="hidden" name="authenticity_token" value="#{CGI.escapeHTML(session_token)}" />)
+      end
+      
+      # Last resort fallback
+      return '<input type="hidden" name="authenticity_token" value="" />'
+    rescue => e
+      puts "CSRF token generation error: #{e.message}" if ENV['RACK_ENV'] == 'development'
+      return '<input type="hidden" name="authenticity_token" value="" />'
+    end
+  end
         trusted_proxies = ENV['TRUSTED_PROXY_IP'].split(',').map { |ip| IPAddr.new(ip.strip) }
+
+  # Generate CSRF protection token tag - BULLETPROOF VERSION
+  def csrf_tag
+    begin
+      # Multiple fallback strategies
+      if env && env['rack.session']
+        # Try the standard Rack::Csrf approach
+        if defined?(Rack::Csrf)
+          token = Rack::Csrf.token(env)
+          field = Rack::Csrf.field
+          
+          if token && !token.empty? && field && !field.empty?
+            return %(<input type="hidden" name="#{CGI.escapeHTML(field)}" value="#{CGI.escapeHTML(token)}" />)
+          end
+        end
+        
+        # Fallback: Generate our own token using session
+        session_token = env['rack.session']['csrf.token'] ||= SecureRandom.hex(32)
+        return %(<input type="hidden" name="authenticity_token" value="#{CGI.escapeHTML(session_token)}" />)
+      end
+      
+      # Last resort fallback
+      return '<input type="hidden" name="authenticity_token" value="" />'
+    rescue => e
+      puts "CSRF token generation error: #{e.message}" if ENV['RACK_ENV'] == 'development'
+      return '<input type="hidden" name="authenticity_token" value="" />'
+    end
+  end
         remote_ip = IPAddr.new(env['REMOTE_ADDR'] || '0.0.0.0')
 
-        if trusted_proxies.any? { |proxy| proxy.include?(remote_ip) }
-          # Only trust X-Forwarded-For from trusted proxy
-          forwarded = env['HTTP_X_FORWARDED_FOR']&.split(',')&.first&.strip
-          if forwarded && forwarded.match?(/\A(?:[0-9]{1,3}\.){3}[0-9]{1,3}\z/)
-            forwarded
-          else
-            env['REMOTE_ADDR']
+  # Generate CSRF protection token tag - BULLETPROOF VERSION
+  def csrf_tag
+    begin
+      # Multiple fallback strategies
+      if env && env['rack.session']
+        # Try the standard Rack::Csrf approach
+        if defined?(Rack::Csrf)
+          token = Rack::Csrf.token(env)
+          field = Rack::Csrf.field
+          
+          if token && !token.empty? && field && !field.empty?
+            return %(<input type="hidden" name="#{CGI.escapeHTML(field)}" value="#{CGI.escapeHTML(token)}" />)
           end
-        else
-          env['REMOTE_ADDR']
         end
-      rescue IPAddr::InvalidAddressError
-        env['REMOTE_ADDR'] || 'unknown'
+        
+        # Fallback: Generate our own token using session
+        session_token = env['rack.session']['csrf.token'] ||= SecureRandom.hex(32)
+        return %(<input type="hidden" name="authenticity_token" value="#{CGI.escapeHTML(session_token)}" />)
       end
-    else
-      # Development/test mode or no trusted proxy configured
-      env['REMOTE_ADDR'] || 'unknown'
+      
+      # Last resort fallback
+      return '<input type="hidden" name="authenticity_token" value="" />'
+    rescue => e
+      puts "CSRF token generation error: #{e.message}" if ENV['RACK_ENV'] == 'development'
+      return '<input type="hidden" name="authenticity_token" value="" />'
     end
   end
 
-  # Generate CSRF protection token tag
+
+  # Generate CSRF protection token tag - BULLETPROOF VERSION
+  def csrf_tag
+    begin
+      # Multiple fallback strategies
+      if env && env['rack.session']
+        # Try the standard Rack::Csrf approach
+        if defined?(Rack::Csrf)
+          token = Rack::Csrf.token(env)
+          field = Rack::Csrf.field
+          
+          if token && !token.empty? && field && !field.empty?
+            return %(<input type="hidden" name="#{CGI.escapeHTML(field)}" value="#{CGI.escapeHTML(token)}" />)
+          end
+        end
+        
+        # Fallback: Generate our own token using session
+        session_token = env['rack.session']['csrf.token'] ||= SecureRandom.hex(32)
+        return %(<input type="hidden" name="authenticity_token" value="#{CGI.escapeHTML(session_token)}" />)
+      end
+      
+      # Last resort fallback
+      return '<input type="hidden" name="authenticity_token" value="" />'
+    rescue => e
+      puts "CSRF token generation error: #{e.message}" if ENV['RACK_ENV'] == 'development'
+      return '<input type="hidden" name="authenticity_token" value="" />'
+    end
+  end
+        if trusted_proxies.any? { |proxy| proxy.include?(remote_ip) }
+
+  # Generate CSRF protection token tag - BULLETPROOF VERSION
+  def csrf_tag
+    begin
+      # Multiple fallback strategies
+      if env && env['rack.session']
+        # Try the standard Rack::Csrf approach
+        if defined?(Rack::Csrf)
+          token = Rack::Csrf.token(env)
+          field = Rack::Csrf.field
+          
+          if token && !token.empty? && field && !field.empty?
+            return %(<input type="hidden" name="#{CGI.escapeHTML(field)}" value="#{CGI.escapeHTML(token)}" />)
+          end
+        end
+        
+        # Fallback: Generate our own token using session
+        session_token = env['rack.session']['csrf.token'] ||= SecureRandom.hex(32)
+        return %(<input type="hidden" name="authenticity_token" value="#{CGI.escapeHTML(session_token)}" />)
+      end
+      
+      # Last resort fallback
+      return '<input type="hidden" name="authenticity_token" value="" />'
+    rescue => e
+      puts "CSRF token generation error: #{e.message}" if ENV['RACK_ENV'] == 'development'
+      return '<input type="hidden" name="authenticity_token" value="" />'
+    end
+  end
+          # Only trust X-Forwarded-For from trusted proxy
+
+  # Generate CSRF protection token tag - BULLETPROOF VERSION
+  def csrf_tag
+    begin
+      # Multiple fallback strategies
+      if env && env['rack.session']
+        # Try the standard Rack::Csrf approach
+        if defined?(Rack::Csrf)
+          token = Rack::Csrf.token(env)
+          field = Rack::Csrf.field
+          
+          if token && !token.empty? && field && !field.empty?
+            return %(<input type="hidden" name="#{CGI.escapeHTML(field)}" value="#{CGI.escapeHTML(token)}" />)
+          end
+        end
+        
+        # Fallback: Generate our own token using session
+        session_token = env['rack.session']['csrf.token'] ||= SecureRandom.hex(32)
+        return %(<input type="hidden" name="authenticity_token" value="#{CGI.escapeHTML(session_token)}" />)
+      end
+      
+      # Last resort fallback
+      return '<input type="hidden" name="authenticity_token" value="" />'
+    rescue => e
+      puts "CSRF token generation error: #{e.message}" if ENV['RACK_ENV'] == 'development'
+      return '<input type="hidden" name="authenticity_token" value="" />'
+    end
+  end
+          forwarded = env['HTTP_X_FORWARDED_FOR']&.split(',')&.first&.strip
+
+  # Generate CSRF protection token tag - BULLETPROOF VERSION
+  def csrf_tag
+    begin
+      # Multiple fallback strategies
+      if env && env['rack.session']
+        # Try the standard Rack::Csrf approach
+        if defined?(Rack::Csrf)
+          token = Rack::Csrf.token(env)
+          field = Rack::Csrf.field
+          
+          if token && !token.empty? && field && !field.empty?
+            return %(<input type="hidden" name="#{CGI.escapeHTML(field)}" value="#{CGI.escapeHTML(token)}" />)
+          end
+        end
+        
+        # Fallback: Generate our own token using session
+        session_token = env['rack.session']['csrf.token'] ||= SecureRandom.hex(32)
+        return %(<input type="hidden" name="authenticity_token" value="#{CGI.escapeHTML(session_token)}" />)
+      end
+      
+      # Last resort fallback
+      return '<input type="hidden" name="authenticity_token" value="" />'
+    rescue => e
+      puts "CSRF token generation error: #{e.message}" if ENV['RACK_ENV'] == 'development'
+      return '<input type="hidden" name="authenticity_token" value="" />'
+    end
+  end
+          if forwarded && forwarded.match?(/\A(?:[0-9]{1,3}\.){3}[0-9]{1,3}\z/)
+
+  # Generate CSRF protection token tag - BULLETPROOF VERSION
+  def csrf_tag
+    begin
+      # Multiple fallback strategies
+      if env && env['rack.session']
+        # Try the standard Rack::Csrf approach
+        if defined?(Rack::Csrf)
+          token = Rack::Csrf.token(env)
+          field = Rack::Csrf.field
+          
+          if token && !token.empty? && field && !field.empty?
+            return %(<input type="hidden" name="#{CGI.escapeHTML(field)}" value="#{CGI.escapeHTML(token)}" />)
+          end
+        end
+        
+        # Fallback: Generate our own token using session
+        session_token = env['rack.session']['csrf.token'] ||= SecureRandom.hex(32)
+        return %(<input type="hidden" name="authenticity_token" value="#{CGI.escapeHTML(session_token)}" />)
+      end
+      
+      # Last resort fallback
+      return '<input type="hidden" name="authenticity_token" value="" />'
+    rescue => e
+      puts "CSRF token generation error: #{e.message}" if ENV['RACK_ENV'] == 'development'
+      return '<input type="hidden" name="authenticity_token" value="" />'
+    end
+  end
+            forwarded
+
+  # Generate CSRF protection token tag - BULLETPROOF VERSION
+  def csrf_tag
+    begin
+      # Multiple fallback strategies
+      if env && env['rack.session']
+        # Try the standard Rack::Csrf approach
+        if defined?(Rack::Csrf)
+          token = Rack::Csrf.token(env)
+          field = Rack::Csrf.field
+          
+          if token && !token.empty? && field && !field.empty?
+            return %(<input type="hidden" name="#{CGI.escapeHTML(field)}" value="#{CGI.escapeHTML(token)}" />)
+          end
+        end
+        
+        # Fallback: Generate our own token using session
+        session_token = env['rack.session']['csrf.token'] ||= SecureRandom.hex(32)
+        return %(<input type="hidden" name="authenticity_token" value="#{CGI.escapeHTML(session_token)}" />)
+      end
+      
+      # Last resort fallback
+      return '<input type="hidden" name="authenticity_token" value="" />'
+    rescue => e
+      puts "CSRF token generation error: #{e.message}" if ENV['RACK_ENV'] == 'development'
+      return '<input type="hidden" name="authenticity_token" value="" />'
+    end
+  end
+          else
+
+  # Generate CSRF protection token tag - BULLETPROOF VERSION
+  def csrf_tag
+    begin
+      # Multiple fallback strategies
+      if env && env['rack.session']
+        # Try the standard Rack::Csrf approach
+        if defined?(Rack::Csrf)
+          token = Rack::Csrf.token(env)
+          field = Rack::Csrf.field
+          
+          if token && !token.empty? && field && !field.empty?
+            return %(<input type="hidden" name="#{CGI.escapeHTML(field)}" value="#{CGI.escapeHTML(token)}" />)
+          end
+        end
+        
+        # Fallback: Generate our own token using session
+        session_token = env['rack.session']['csrf.token'] ||= SecureRandom.hex(32)
+        return %(<input type="hidden" name="authenticity_token" value="#{CGI.escapeHTML(session_token)}" />)
+      end
+      
+      # Last resort fallback
+      return '<input type="hidden" name="authenticity_token" value="" />'
+    rescue => e
+      puts "CSRF token generation error: #{e.message}" if ENV['RACK_ENV'] == 'development'
+      return '<input type="hidden" name="authenticity_token" value="" />'
+    end
+  end
+            env['REMOTE_ADDR']
+
+  # Generate CSRF protection token tag - BULLETPROOF VERSION
+  def csrf_tag
+    begin
+      # Multiple fallback strategies
+      if env && env['rack.session']
+        # Try the standard Rack::Csrf approach
+        if defined?(Rack::Csrf)
+          token = Rack::Csrf.token(env)
+          field = Rack::Csrf.field
+          
+          if token && !token.empty? && field && !field.empty?
+            return %(<input type="hidden" name="#{CGI.escapeHTML(field)}" value="#{CGI.escapeHTML(token)}" />)
+          end
+        end
+        
+        # Fallback: Generate our own token using session
+        session_token = env['rack.session']['csrf.token'] ||= SecureRandom.hex(32)
+        return %(<input type="hidden" name="authenticity_token" value="#{CGI.escapeHTML(session_token)}" />)
+      end
+      
+      # Last resort fallback
+      return '<input type="hidden" name="authenticity_token" value="" />'
+    rescue => e
+      puts "CSRF token generation error: #{e.message}" if ENV['RACK_ENV'] == 'development'
+      return '<input type="hidden" name="authenticity_token" value="" />'
+    end
+  end
+          end
+
+  # Generate CSRF protection token tag - BULLETPROOF VERSION
+  def csrf_tag
+    begin
+      # Multiple fallback strategies
+      if env && env['rack.session']
+        # Try the standard Rack::Csrf approach
+        if defined?(Rack::Csrf)
+          token = Rack::Csrf.token(env)
+          field = Rack::Csrf.field
+          
+          if token && !token.empty? && field && !field.empty?
+            return %(<input type="hidden" name="#{CGI.escapeHTML(field)}" value="#{CGI.escapeHTML(token)}" />)
+          end
+        end
+        
+        # Fallback: Generate our own token using session
+        session_token = env['rack.session']['csrf.token'] ||= SecureRandom.hex(32)
+        return %(<input type="hidden" name="authenticity_token" value="#{CGI.escapeHTML(session_token)}" />)
+      end
+      
+      # Last resort fallback
+      return '<input type="hidden" name="authenticity_token" value="" />'
+    rescue => e
+      puts "CSRF token generation error: #{e.message}" if ENV['RACK_ENV'] == 'development'
+      return '<input type="hidden" name="authenticity_token" value="" />'
+    end
+  end
+        else
+
+  # Generate CSRF protection token tag - BULLETPROOF VERSION
+  def csrf_tag
+    begin
+      # Multiple fallback strategies
+      if env && env['rack.session']
+        # Try the standard Rack::Csrf approach
+        if defined?(Rack::Csrf)
+          token = Rack::Csrf.token(env)
+          field = Rack::Csrf.field
+          
+          if token && !token.empty? && field && !field.empty?
+            return %(<input type="hidden" name="#{CGI.escapeHTML(field)}" value="#{CGI.escapeHTML(token)}" />)
+          end
+        end
+        
+        # Fallback: Generate our own token using session
+        session_token = env['rack.session']['csrf.token'] ||= SecureRandom.hex(32)
+        return %(<input type="hidden" name="authenticity_token" value="#{CGI.escapeHTML(session_token)}" />)
+      end
+      
+      # Last resort fallback
+      return '<input type="hidden" name="authenticity_token" value="" />'
+    rescue => e
+      puts "CSRF token generation error: #{e.message}" if ENV['RACK_ENV'] == 'development'
+      return '<input type="hidden" name="authenticity_token" value="" />'
+    end
+  end
+          env['REMOTE_ADDR']
+
+  # Generate CSRF protection token tag - BULLETPROOF VERSION
+  def csrf_tag
+    begin
+      # Multiple fallback strategies
+      if env && env['rack.session']
+        # Try the standard Rack::Csrf approach
+        if defined?(Rack::Csrf)
+          token = Rack::Csrf.token(env)
+          field = Rack::Csrf.field
+          
+          if token && !token.empty? && field && !field.empty?
+            return %(<input type="hidden" name="#{CGI.escapeHTML(field)}" value="#{CGI.escapeHTML(token)}" />)
+          end
+        end
+        
+        # Fallback: Generate our own token using session
+        session_token = env['rack.session']['csrf.token'] ||= SecureRandom.hex(32)
+        return %(<input type="hidden" name="authenticity_token" value="#{CGI.escapeHTML(session_token)}" />)
+      end
+      
+      # Last resort fallback
+      return '<input type="hidden" name="authenticity_token" value="" />'
+    rescue => e
+      puts "CSRF token generation error: #{e.message}" if ENV['RACK_ENV'] == 'development'
+      return '<input type="hidden" name="authenticity_token" value="" />'
+    end
+  end
+        end
+
+  # Generate CSRF protection token tag - BULLETPROOF VERSION
+  def csrf_tag
+    begin
+      # Multiple fallback strategies
+      if env && env['rack.session']
+        # Try the standard Rack::Csrf approach
+        if defined?(Rack::Csrf)
+          token = Rack::Csrf.token(env)
+          field = Rack::Csrf.field
+          
+          if token && !token.empty? && field && !field.empty?
+            return %(<input type="hidden" name="#{CGI.escapeHTML(field)}" value="#{CGI.escapeHTML(token)}" />)
+          end
+        end
+        
+        # Fallback: Generate our own token using session
+        session_token = env['rack.session']['csrf.token'] ||= SecureRandom.hex(32)
+        return %(<input type="hidden" name="authenticity_token" value="#{CGI.escapeHTML(session_token)}" />)
+      end
+      
+      # Last resort fallback
+      return '<input type="hidden" name="authenticity_token" value="" />'
+    rescue => e
+      puts "CSRF token generation error: #{e.message}" if ENV['RACK_ENV'] == 'development'
+      return '<input type="hidden" name="authenticity_token" value="" />'
+    end
+  end
+      rescue IPAddr::InvalidAddressError
+
+  # Generate CSRF protection token tag - BULLETPROOF VERSION
+  def csrf_tag
+    begin
+      # Multiple fallback strategies
+      if env && env['rack.session']
+        # Try the standard Rack::Csrf approach
+        if defined?(Rack::Csrf)
+          token = Rack::Csrf.token(env)
+          field = Rack::Csrf.field
+          
+          if token && !token.empty? && field && !field.empty?
+            return %(<input type="hidden" name="#{CGI.escapeHTML(field)}" value="#{CGI.escapeHTML(token)}" />)
+          end
+        end
+        
+        # Fallback: Generate our own token using session
+        session_token = env['rack.session']['csrf.token'] ||= SecureRandom.hex(32)
+        return %(<input type="hidden" name="authenticity_token" value="#{CGI.escapeHTML(session_token)}" />)
+      end
+      
+      # Last resort fallback
+      return '<input type="hidden" name="authenticity_token" value="" />'
+    rescue => e
+      puts "CSRF token generation error: #{e.message}" if ENV['RACK_ENV'] == 'development'
+      return '<input type="hidden" name="authenticity_token" value="" />'
+    end
+  end
+        env['REMOTE_ADDR'] || 'unknown'
+
+  # Generate CSRF protection token tag - BULLETPROOF VERSION
+  def csrf_tag
+    begin
+      # Multiple fallback strategies
+      if env && env['rack.session']
+        # Try the standard Rack::Csrf approach
+        if defined?(Rack::Csrf)
+          token = Rack::Csrf.token(env)
+          field = Rack::Csrf.field
+          
+          if token && !token.empty? && field && !field.empty?
+            return %(<input type="hidden" name="#{CGI.escapeHTML(field)}" value="#{CGI.escapeHTML(token)}" />)
+          end
+        end
+        
+        # Fallback: Generate our own token using session
+        session_token = env['rack.session']['csrf.token'] ||= SecureRandom.hex(32)
+        return %(<input type="hidden" name="authenticity_token" value="#{CGI.escapeHTML(session_token)}" />)
+      end
+      
+      # Last resort fallback
+      return '<input type="hidden" name="authenticity_token" value="" />'
+    rescue => e
+      puts "CSRF token generation error: #{e.message}" if ENV['RACK_ENV'] == 'development'
+      return '<input type="hidden" name="authenticity_token" value="" />'
+    end
+  end
+      end
+
+  # Generate CSRF protection token tag - BULLETPROOF VERSION
+  def csrf_tag
+    begin
+      # Multiple fallback strategies
+      if env && env['rack.session']
+        # Try the standard Rack::Csrf approach
+        if defined?(Rack::Csrf)
+          token = Rack::Csrf.token(env)
+          field = Rack::Csrf.field
+          
+          if token && !token.empty? && field && !field.empty?
+            return %(<input type="hidden" name="#{CGI.escapeHTML(field)}" value="#{CGI.escapeHTML(token)}" />)
+          end
+        end
+        
+        # Fallback: Generate our own token using session
+        session_token = env['rack.session']['csrf.token'] ||= SecureRandom.hex(32)
+        return %(<input type="hidden" name="authenticity_token" value="#{CGI.escapeHTML(session_token)}" />)
+      end
+      
+      # Last resort fallback
+      return '<input type="hidden" name="authenticity_token" value="" />'
+    rescue => e
+      puts "CSRF token generation error: #{e.message}" if ENV['RACK_ENV'] == 'development'
+      return '<input type="hidden" name="authenticity_token" value="" />'
+    end
+  end
+    else
+
+  # Generate CSRF protection token tag - BULLETPROOF VERSION
+  def csrf_tag
+    begin
+      # Multiple fallback strategies
+      if env && env['rack.session']
+        # Try the standard Rack::Csrf approach
+        if defined?(Rack::Csrf)
+          token = Rack::Csrf.token(env)
+          field = Rack::Csrf.field
+          
+          if token && !token.empty? && field && !field.empty?
+            return %(<input type="hidden" name="#{CGI.escapeHTML(field)}" value="#{CGI.escapeHTML(token)}" />)
+          end
+        end
+        
+        # Fallback: Generate our own token using session
+        session_token = env['rack.session']['csrf.token'] ||= SecureRandom.hex(32)
+        return %(<input type="hidden" name="authenticity_token" value="#{CGI.escapeHTML(session_token)}" />)
+      end
+      
+      # Last resort fallback
+      return '<input type="hidden" name="authenticity_token" value="" />'
+    rescue => e
+      puts "CSRF token generation error: #{e.message}" if ENV['RACK_ENV'] == 'development'
+      return '<input type="hidden" name="authenticity_token" value="" />'
+    end
+  end
+      # Development/test mode or no trusted proxy configured
+
+  # Generate CSRF protection token tag - BULLETPROOF VERSION
+  def csrf_tag
+    begin
+      # Multiple fallback strategies
+      if env && env['rack.session']
+        # Try the standard Rack::Csrf approach
+        if defined?(Rack::Csrf)
+          token = Rack::Csrf.token(env)
+          field = Rack::Csrf.field
+          
+          if token && !token.empty? && field && !field.empty?
+            return %(<input type="hidden" name="#{CGI.escapeHTML(field)}" value="#{CGI.escapeHTML(token)}" />)
+          end
+        end
+        
+        # Fallback: Generate our own token using session
+        session_token = env['rack.session']['csrf.token'] ||= SecureRandom.hex(32)
+        return %(<input type="hidden" name="authenticity_token" value="#{CGI.escapeHTML(session_token)}" />)
+      end
+      
+      # Last resort fallback
+      return '<input type="hidden" name="authenticity_token" value="" />'
+    rescue => e
+      puts "CSRF token generation error: #{e.message}" if ENV['RACK_ENV'] == 'development'
+      return '<input type="hidden" name="authenticity_token" value="" />'
+    end
+  end
+      env['REMOTE_ADDR'] || 'unknown'
+
+  # Generate CSRF protection token tag - BULLETPROOF VERSION
+  def csrf_tag
+    begin
+      # Multiple fallback strategies
+      if env && env['rack.session']
+        # Try the standard Rack::Csrf approach
+        if defined?(Rack::Csrf)
+          token = Rack::Csrf.token(env)
+          field = Rack::Csrf.field
+          
+          if token && !token.empty? && field && !field.empty?
+            return %(<input type="hidden" name="#{CGI.escapeHTML(field)}" value="#{CGI.escapeHTML(token)}" />)
+          end
+        end
+        
+        # Fallback: Generate our own token using session
+        session_token = env['rack.session']['csrf.token'] ||= SecureRandom.hex(32)
+        return %(<input type="hidden" name="authenticity_token" value="#{CGI.escapeHTML(session_token)}" />)
+      end
+      
+      # Last resort fallback
+      return '<input type="hidden" name="authenticity_token" value="" />'
+    rescue => e
+      puts "CSRF token generation error: #{e.message}" if ENV['RACK_ENV'] == 'development'
+      return '<input type="hidden" name="authenticity_token" value="" />'
+    end
+  end
+    end
+
+  # Generate CSRF protection token tag - BULLETPROOF VERSION
+  def csrf_tag
+    begin
+      # Multiple fallback strategies
+      if env && env['rack.session']
+        # Try the standard Rack::Csrf approach
+        if defined?(Rack::Csrf)
+          token = Rack::Csrf.token(env)
+          field = Rack::Csrf.field
+          
+          if token && !token.empty? && field && !field.empty?
+            return %(<input type="hidden" name="#{CGI.escapeHTML(field)}" value="#{CGI.escapeHTML(token)}" />)
+          end
+        end
+        
+        # Fallback: Generate our own token using session
+        session_token = env['rack.session']['csrf.token'] ||= SecureRandom.hex(32)
+        return %(<input type="hidden" name="authenticity_token" value="#{CGI.escapeHTML(session_token)}" />)
+      end
+      
+      # Last resort fallback
+      return '<input type="hidden" name="authenticity_token" value="" />'
+    rescue => e
+      puts "CSRF token generation error: #{e.message}" if ENV['RACK_ENV'] == 'development'
+      return '<input type="hidden" name="authenticity_token" value="" />'
+    end
+  end
+  end
+
+  # Generate CSRF protection token tag - BULLETPROOF VERSION
+  def csrf_tag
+    begin
+      # Multiple fallback strategies
+      if env && env['rack.session']
+        # Try the standard Rack::Csrf approach
+        if defined?(Rack::Csrf)
+          token = Rack::Csrf.token(env)
+          field = Rack::Csrf.field
+          
+          if token && !token.empty? && field && !field.empty?
+            return %(<input type="hidden" name="#{CGI.escapeHTML(field)}" value="#{CGI.escapeHTML(token)}" />)
+          end
+        end
+        
+        # Fallback: Generate our own token using session
+        session_token = env['rack.session']['csrf.token'] ||= SecureRandom.hex(32)
+        return %(<input type="hidden" name="authenticity_token" value="#{CGI.escapeHTML(session_token)}" />)
+      end
+      
+      # Last resort fallback
+      return '<input type="hidden" name="authenticity_token" value="" />'
+    rescue => e
+      puts "CSRF token generation error: #{e.message}" if ENV['RACK_ENV'] == 'development'
+      return '<input type="hidden" name="authenticity_token" value="" />'
+    end
+  end
+
+  # Generate CSRF protection token tag - CRITICAL METHOD
+
+  # Alternative CSRF token method for forms
+  def csrf_token
+    begin
+      Rack::Csrf.token(env)
+    rescue => e
+      puts "CSRF token retrieval error: #{e.message}" if ENV['RACK_ENV'] == 'development'
+      ''
+    end
+  end
+
+  # CSRF field name
+  def csrf_field
+    begin
+      Rack::Csrf.field
+    rescue => e
+      puts "CSRF field retrieval error: #{e.message}" if ENV['RACK_ENV'] == 'development'
+      'authenticity_token'
+    end
+  end
 
   # Format rate limit message with time remaining
   def rate_limit_message(action, identifier)

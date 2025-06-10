@@ -1,0 +1,27 @@
+<div class="security-icon">🔐</div>
+<h2>Two-Factor Authentication</h2>
+<p class="subtitle">Decrypt the challenge with your PGP private key</p>
+
+<div class="user-info">
+  <div class="label">Authenticating as</div>
+  <div class="username"><%= CGI.escapeHTML(@account[:username]) %></div>
+</div>
+
+<% if flash['error'] %>
+  <div class="error"><%= flash['error'] %></div>
+<% end %>
+
+<div class="challenge-container">
+  <div class="instructions">Encrypted challenge:</div>
+  <pre class="encrypted-text"><%= CGI.escapeHTML(@encrypted) %></pre>
+</div>
+
+<div class="form-container">
+  <div class="instructions">Enter the decrypted code:</div>
+  <form method="post">
+    <%= csrf_tag %>
+    <input type="text" name="code" placeholder="Enter decrypted code" required autocomplete="off">
+    <br>
+    <button type="submit" class="btn">Verify</button>
+  </form>
+</div>
