@@ -3,6 +3,7 @@
 require_relative 'lib/pgp_auth'
 
 module Rodauth
+  # Rodauth feature for PGP challenge authentication
   Feature.define(:pgp_challenge) do
     depends :base
 

@@ -3,6 +3,7 @@
 require 'gpgme'
 require 'securerandom'
 
+# Module for PGP authentication operations
 module PgpAuth
   CRYPTO = GPGME::Crypto.new(always_trust: true)
 
