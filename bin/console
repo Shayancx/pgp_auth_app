@@ -5,8 +5,8 @@ require_relative '../config/database'
 require_relative '../app'
 require 'irb'
 
-puts "PGP Auth Console"
-puts "Available: DB, App"
-puts ""
+puts 'PGP Auth Console'
+puts 'Available: DB, App'
+puts ''
 
 IRB.start

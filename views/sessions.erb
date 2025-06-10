@@ -24,6 +24,7 @@
           <% end %>
         </div>
         <div class="session-details">
+          <div>Token: <%= session[:session_token][0..8] %>...</div>
           <div>IP: <%= session[:ip_address] || 'Unknown' %></div>
           <div>Created: <%= fingerprint[:created].strftime('%Y-%m-%d %H:%M:%S') %></div>
           <div>Last Active: <%= fingerprint[:last_accessed].strftime('%Y-%m-%d %H:%M:%S') %></div>

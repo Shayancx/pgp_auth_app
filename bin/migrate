@@ -12,7 +12,7 @@ puts 'Running database migrations...'
 begin
   Sequel::Migrator.run(DB, 'db/migrate')
   puts '✓ Migrations completed successfully'
-rescue => e
+rescue StandardError => e
   puts "✗ Migration failed: #{e.message}"
   exit 1
 end

@@ -2,9 +2,9 @@
 # frozen_string_literal: true
 
 # Development server startup script
-puts "Starting PGP Auth development server..."
-puts "Server will be available at: http://localhost:9292"
-puts "Press Ctrl+C to stop"
-puts ""
+puts 'Starting PGP Auth development server...'
+puts 'Server will be available at: http://localhost:9292'
+puts 'Press Ctrl+C to stop'
+puts ''
 
-exec "bundle", "exec", "rackup", "-p", "9292"
+exec 'bundle', 'exec', 'rackup', '-p', '9292'

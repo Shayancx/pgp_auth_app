@@ -20,16 +20,29 @@ class App < Roda
   plugin :flash
   plugin :render, engine: 'erb', views: 'views'
   plugin :public
-  plugin :default_headers, { 'Content-Type' => 'text/html; charset=UTF-8' }
+  plugin :default_headers, {
+    'Content-Type' => 'text/html; charset=UTF-8',
+    'X-Frame-Options' => 'DENY',
+    'X-Content-Type-Options' => 'nosniff',
+    'X-XSS-Protection' => '1; mode=block',
+    'Referrer-Policy' => 'strict-origin-when-cross-origin',
+    'Permissions-Policy' => 'geolocation=(), microphone=(), camera=()'
+  }
 
   # Session security middleware
   plugin :middleware do |middleware|
     middleware.use SessionMiddleware
   end
 
+  # Error handling
+  plugin :error_handler do |e|
+    raise e unless ENV['RACK_ENV'] == 'production'
+
+    @error_message = 'An error occurred. Please try again.'
+    view 'error'
+  end
 
   route do |r|
-
     r.root do
       view 'home'
     end
@@ -60,10 +73,24 @@ class App < Roda
         end
 
         RateLimit.record_attempt(client_ip, 'login')
+
+        # Always perform constant-time lookup
         account = DB[:accounts].where(username: username, verified: true).first
 
+        # Generic error message to prevent username enumeration
+        generic_error = 'Invalid credentials. Please check your username and try again.'
+
         unless account
-          flash['error'] = 'Invalid username'
+          # Perform dummy password check to prevent timing attacks
+          BCrypt::Password.create('dummy').is_password?('dummy')
+
+          SessionManager.log_event(nil, 'login_failed', client_ip, env['HTTP_USER_AGENT'], {
+                                     username: username,
+                                     reason: 'invalid_username',
+                                     success: false
+                                   })
+
+          flash['error'] = generic_error
           r.redirect '/login'
         end
 
@@ -137,12 +164,14 @@ class App < Roda
 
           create_secure_session(account_id)
 
-          session.delete(:pgp_only_account_id)
-          session.delete(:login_username)
           flash['notice'] = 'PGP authentication successful - account security restored'
           r.redirect '/dashboard'
         else
-          flash['error'] = 'Incorrect PGP code. Please try again.'
+          SessionManager.log_event(account_id, 'pgp_auth_failed', client_ip, env['HTTP_USER_AGENT'], {
+                                     success: false
+                                   })
+
+          flash['error'] = 'Invalid authentication code. Please try again.'
           r.redirect '/login-pgp-only'
         end
       end
@@ -180,11 +209,14 @@ class App < Roda
 
           create_secure_session(account_id)
 
-          session.delete(:pending_account_id)
           flash['notice'] = 'Authentication successful'
           r.redirect '/dashboard'
         else
-          flash['error'] = 'Incorrect code. Please try again.'
+          SessionManager.log_event(account_id, '2fa_failed', client_ip, env['HTTP_USER_AGENT'], {
+                                     success: false
+                                   })
+
+          flash['error'] = 'Invalid code. Please try again.'
           r.redirect '/pgp-2fa'
         end
       end
@@ -226,10 +258,13 @@ class App < Roda
           view 'verify_blocked'
         else
           code = PgpAuth.random_code
+          code_hash = PgpAuth.hash_challenge(code)
+
           DB[:accounts].where(id: account_id).update(
-            verification_code: code,
+            verification_code: code_hash,
             verification_expires_at: Time.now + 600
           )
+
           @encrypted = PgpAuth.encrypt_for(@account[:fingerprint], code)
           view 'verify_pgp'
         end
@@ -252,10 +287,16 @@ class App < Roda
           r.redirect '/verify-pgp'
         end
 
-        if submitted_code == account[:verification_code]
+        submitted_hash = PgpAuth.hash_challenge(submitted_code)
+
+        if secure_compare(submitted_hash, account[:verification_code])
           complete_verification(r, account_id)
         else
-          flash['error'] = 'Incorrect code. Please try again.'
+          SessionManager.log_event(account_id, 'verification_failed', client_ip, env['HTTP_USER_AGENT'], {
+                                     success: false
+                                   })
+
+          flash['error'] = 'Invalid verification code. Please try again.'
           r.redirect '/verify-pgp'
         end
       end
@@ -281,9 +322,9 @@ class App < Roda
         end
 
         r.post 'revoke' do
-          token = r.params['token']
-          if token && token != session[:session_token]
-            SessionManager.revoke_session(token, 'user_revoked')
+          token_hash = r.params['token']
+          if token_hash && !SessionManager.token_matches_session?(session[:session_token], token_hash)
+            SessionManager.revoke_session_by_hash(token_hash, 'user_revoked')
             flash['notice'] = 'Session revoked successfully'
           end
           r.redirect '/sessions'
@@ -340,22 +381,42 @@ class App < Roda
     account = DB[:accounts].where(username: username, verified: true).first
 
     if account && BCrypt::Password.new(account[:password_hash]) == password
+      DB[:accounts].where(id: account[:id]).update(
+        failed_login_count: 0,
+        last_failed_login_at: nil
+      )
+
       session[:pending_account_id] = account[:id]
       session.delete(:login_username)
       r.redirect '/pgp-2fa'
     else
-      pgp_only_triggered = RateLimit.record_password_failure(username)
+      if account
+        pgp_only_triggered = RateLimit.record_password_failure(username)
 
-      if pgp_only_triggered
-        flash['notice'] = 'Too many password failures. ' \
-                          'This account now requires PGP-only authentication.'
-        session[:pgp_only_account_id] = account[:id] if account
-        session.delete(:login_username)
-        r.redirect '/login-pgp-only'
-      else
-        flash['error'] = 'Invalid password'
-        r.redirect '/login-password'
+        DB[:accounts].where(id: account[:id]).update(
+          failed_login_count: Sequel[:failed_login_count] + 1,
+          last_failed_login_at: Time.now
+        )
+
+        if pgp_only_triggered
+          flash['notice'] = 'Too many password failures. ' \
+                            'This account now requires PGP-only authentication.'
+          session[:pgp_only_account_id] = account[:id]
+          session.delete(:login_username)
+          r.redirect '/login-pgp-only'
+        end
       end
+
+      SessionManager.log_event(
+        account ? account[:id] : nil,
+        'password_failed',
+        client_ip,
+        env['HTTP_USER_AGENT'],
+        { username: username, success: false }
+      )
+
+      flash['error'] = 'Invalid credentials. Please check your password and try again.'
+      r.redirect '/login-password'
     end
   end
 
@@ -396,14 +457,17 @@ class App < Roda
       return nil
     end
 
-    if username.length < 3 || username.length > 50
-      flash['error'] = 'Username must be between 3 and 50 characters'
+    # Validate username format
+    if (error = validate_username_format(username))
+      flash['error'] = "Username #{error}"
       r.redirect '/register'
       return nil
     end
 
-    if password.length < 8
-      flash['error'] = 'Password must be at least 8 characters long'
+    # Validate password complexity
+    password_errors = validate_password_complexity(password)
+    unless password_errors.empty?
+      flash['error'] = "Password must #{password_errors.join(', ')}"
       r.redirect '/register'
       return nil
     end
@@ -418,7 +482,7 @@ class App < Roda
   end
 
   def create_unverified_account(r, params, fingerprint)
-    password_hash = BCrypt::Password.create(params[:password])
+    password_hash = BCrypt::Password.create(params[:password], cost: 12)
 
     id = DB[:accounts].insert(
       username: params[:username],
@@ -427,8 +491,13 @@ class App < Roda
       fingerprint: fingerprint,
       verified: false,
       pgp_only_mode: false,
-      failed_password_count: 0
+      failed_password_count: 0,
+      created_at: Time.now
     )
+
+    SessionManager.log_event(id, 'account_created', client_ip, env['HTTP_USER_AGENT'], {
+                               username: params[:username]
+                             })
 
     session[:unverified_account_id] = id
     r.redirect '/verify-pgp'
@@ -441,32 +510,42 @@ class App < Roda
       verification_expires_at: nil
     )
 
+    SessionManager.log_event(account_id, 'account_verified', client_ip, env['HTTP_USER_AGENT'])
+
     create_secure_session(account_id)
 
-    session.delete(:unverified_account_id)
     flash['notice'] = 'Account created and verified successfully!'
     r.redirect '/dashboard'
   end
 
   def generate_pgp_challenge(account_id)
+    # Clean up old challenges
     DB[:challenges].where(account_id: account_id)
                    .where { expires_at < Time.now }
                    .delete
 
     code = PgpAuth.random_code
+    code_hash = PgpAuth.hash_challenge(code)
+
     DB[:challenges].insert(
       account_id: account_id,
-      code: code,
-      expires_at: Time.now + 300
+      code_hash: code_hash,
+      expires_at: Time.now + 300,
+      created_at: Time.now
     )
+
     @encrypted = PgpAuth.encrypt_for(@account[:fingerprint], code)
   end
 
   def verify_pgp_challenge(account_id, submitted_code)
     row = DB[:challenges].where(account_id: account_id)
+                         .where { expires_at > Time.now }
                          .reverse(:id).first
 
-    row && row[:expires_at] > Time.now && submitted_code == row[:code]
+    return false unless row
+
+    submitted_hash = PgpAuth.hash_challenge(submitted_code)
+    secure_compare(submitted_hash, row[:code_hash])
   end
 
   def require_authentication(r)

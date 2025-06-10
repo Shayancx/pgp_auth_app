@@ -6,7 +6,7 @@ require 'securerandom'
 
 def create_database_if_not_exists
   database_name = ENV.fetch('DATABASE_NAME', 'pgp_auth_app')
-  
+
   begin
     # Try to connect to the database directly
     PG.connect(dbname: database_name)
@@ -26,27 +26,27 @@ def create_database_if_not_exists
 end
 
 def setup_environment
-  unless File.exist?('.env')
-    puts "📝 Creating .env file..."
+  if File.exist?('.env')
+    puts '✓ .env file already exists'
+  else
+    puts '📝 Creating .env file...'
     File.write('.env', <<~ENV)
       DATABASE_URL=postgres://localhost/pgp_auth_app
       SESSION_SECRET=#{SecureRandom.hex(64)}
       RACK_ENV=development
     ENV
-    puts "✓ Created .env file with secure session secret"
-  else
-    puts "✓ .env file already exists"
+    puts '✓ Created .env file with secure session secret'
   end
 end
 
 # Main setup
-puts "🚀 Setting up PGP Auth App..."
+puts '🚀 Setting up PGP Auth App...'
 
 setup_environment
 create_database_if_not_exists
 
 # Run migrations
-puts "📊 Running migrations..."
+puts '📊 Running migrations...'
 require_relative '../config/database'
 require 'sequel'
 
@@ -54,12 +54,12 @@ Sequel.extension :migration
 begin
   Sequel::Migrator.run(DB, 'db/migrate')
   puts '✓ Migrations completed successfully'
-rescue => e
+rescue StandardError => e
   puts "✗ Migration failed: #{e.message}"
-  puts "Make sure PostgreSQL is running and accessible"
+  puts 'Make sure PostgreSQL is running and accessible'
   exit 1
 end
 
-puts ""
-puts "🎉 Setup complete!"
+puts ''
+puts '🎉 Setup complete!'
 puts "Run './bin/dev' to start the development server"
