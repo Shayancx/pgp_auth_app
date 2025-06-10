@@ -1,8 +1,0 @@
-<h2>PGP Challenge</h2>
-<p>Decrypt the following message with your private key and paste the plaintext code below:</p>
-<pre><%= @encrypted %></pre>
-<form method="post">
-  <input type="text" name="code" placeholder="Paste decrypted code" size="40" required autocomplete="off">
-  <button type="submit">Verify</button>
-</form>
-<p><small>Note: This form uses cryptographic verification instead of CSRF tokens.</small></p>

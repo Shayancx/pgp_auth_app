@@ -1,128 +1,315 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>PGP Auth App</title>
+  <title>PGP Auth</title>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta http-equiv="X-Frame-Options" content="DENY">
   <meta http-equiv="X-Content-Type-Options" content="nosniff">
   <meta http-equiv="X-XSS-Protection" content="1; mode=block">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'">
   <style>
-    body {
-        font-family: Arial, sans-serif;
-        max-width: 800px;
-        margin: 0 auto;
-        padding: 20px;
-        line-height: 1.6;
-        background-color: #f8f9fa;
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { 
+      font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+      background: #000000; 
+      color: #ffffff; 
+      min-height: 100vh; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center;
+      line-height: 1.6;
+      padding: 20px;
     }
-    h1, h2 {
-        color: #333;
+    .container { 
+      max-width: 600px; 
+      width: 100%;
+      margin: 0 auto;
     }
-    .notice {
-        background-color: #d4edda;
-        color: #155724;
-        padding: 15px;
-        border: 1px solid #c3e6cb;
-        border-radius: 4px;
-        margin-bottom: 20px;
-        border-left: 4px solid #28a745;
+    h1 { 
+      font-size: 2.5rem; 
+      font-weight: 300; 
+      margin-bottom: 16px; 
+      letter-spacing: -0.02em;
+      text-align: center;
     }
-    .error {
-        background-color: #f8d7da;
-        color: #721c24;
-        padding: 15px;
-        border: 1px solid #f5c6cb;
-        border-radius: 4px;
-        margin-bottom: 20px;
-        border-left: 4px solid #dc3545;
+    h2 { 
+      font-size: 2rem; 
+      font-weight: 300; 
+      margin-bottom: 8px; 
+      text-align: center;
+      letter-spacing: -0.02em;
     }
-    textarea {
-        width: 100%;
-        max-width: 600px;
-        font-family: monospace;
-        padding: 12px;
-        border: 2px solid #ddd;
-        border-radius: 4px;
-        resize: vertical;
-        min-height: 200px;
+    h3 {
+      font-size: 1.1rem;
+      font-weight: 400;
+      margin-bottom: 12px;
+      color: #cccccc;
     }
-    textarea:focus {
-        border-color: #007bff;
-        outline: none;
-        box-shadow: 0 0 0 2px rgba(0,123,255,.25);
+    p { 
+      font-size: 1.1rem; 
+      color: #999999; 
+      margin-bottom: 32px; 
+      font-weight: 400;
+      text-align: center;
     }
-    input[type="text"] {
-        padding: 12px;
-        border: 2px solid #ddd;
-        border-radius: 4px;
-        margin-right: 10px;
-        font-family: monospace;
-        width: 300px;
+    .btn-group {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
     }
-    input[type="text"]:focus {
-        border-color: #007bff;
-        outline: none;
-        box-shadow: 0 0 0 2px rgba(0,123,255,.25);
+    .btn { 
+      display: inline-block; 
+      background: #ffffff; 
+      color: #000000; 
+      padding: 16px 32px; 
+      text-decoration: none; 
+      border-radius: 8px; 
+      font-weight: 500; 
+      font-size: 1rem;
+      transition: all 0.2s ease;
+      border: 1px solid #ffffff;
+      flex: 1;
+      text-align: center;
+      cursor: pointer;
     }
-    button {
-        background-color: #007bff;
-        color: white;
-        padding: 12px 20px;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 16px;
-        transition: background-color 0.2s;
+    .btn:hover { 
+      background: transparent; 
+      color: #ffffff; 
+      transform: translateY(-1px);
     }
-    button:hover {
-        background-color: #0056b3;
+    .btn-secondary {
+      background: transparent;
+      color: #ffffff;
+      border: 1px solid #333333;
     }
-    pre {
-        background-color: #f8f9fa;
-        padding: 20px;
-        border: 2px solid #e9ecef;
-        border-radius: 4px;
-        overflow-x: auto;
-        font-family: monospace;
-        white-space: pre-wrap;
-        word-wrap: break-word;
-        border-left: 4px solid #007bff;
+    .btn-secondary:hover {
+      border-color: #ffffff;
     }
-    a {
-        color: #007bff;
-        text-decoration: none;
-        font-weight: 500;
+    button.btn {
+      width: 100%;
     }
-    a:hover {
-        text-decoration: underline;
+    .lock-icon, .security-icon { 
+      font-size: 3rem; 
+      margin-bottom: 24px; 
+      opacity: 0.8;
+      text-align: center;
     }
-    form {
-        background: white;
-        padding: 20px;
-        border-radius: 8px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        margin: 20px 0;
+    .success-icon { 
+      font-size: 4rem; 
+      margin-bottom: 24px; 
+      color: #00ff88;
+      text-align: center;
     }
-    h2 {
-        border-bottom: 2px solid #007bff;
-        padding-bottom: 10px;
+    .subtitle {
+      text-align: center;
+      color: #666666;
+      margin-bottom: 24px;
+      font-size: 1rem;
     }
-    small {
-        color: #6c757d;
-        font-style: italic;
+    .form-container { 
+      background: #111111; 
+      padding: 40px; 
+      border-radius: 12px; 
+      border: 1px solid #222222;
+    }
+    .challenge-container { 
+      background: #111111; 
+      padding: 32px; 
+      border-radius: 12px; 
+      border: 1px solid #222222;
+      margin-bottom: 24px;
+    }
+    .welcome-container { 
+      background: #111111; 
+      padding: 40px; 
+      border-radius: 12px; 
+      border: 1px solid #222222;
+      margin-bottom: 24px;
+    }
+    input[type="text"], input[type="password"] { 
+      width: 100%; 
+      padding: 16px 20px; 
+      border: 1px solid #333333; 
+      border-radius: 8px; 
+      background: #000000; 
+      color: #ffffff; 
+      font-size: 16px; 
+      margin-bottom: 20px;
+    }
+    textarea { 
+      width: 100%; 
+      padding: 20px; 
+      border: 1px solid #333333; 
+      border-radius: 8px; 
+      font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace; 
+      background: #000000; 
+      color: #ffffff; 
+      font-size: 14px; 
+      min-height: 200px; 
+      resize: vertical;
+      line-height: 1.4;
+      margin-bottom: 20px;
+    }
+    input:focus, textarea:focus { 
+      border-color: #ffffff; 
+      outline: none; 
+      box-shadow: 0 0 0 1px #ffffff;
+    }
+    input::placeholder, textarea::placeholder {
+      color: #555555;
+    }
+    .error { 
+      background: #330000; 
+      color: #ff6666; 
+      padding: 16px; 
+      border-radius: 8px; 
+      margin-bottom: 24px; 
+      border: 1px solid #660000;
+      text-align: center;
+    }
+    .notice { 
+      background: #003322; 
+      color: #00ff88; 
+      padding: 16px; 
+      border-radius: 8px; 
+      margin-bottom: 24px; 
+      border: 1px solid #006644;
+      text-align: center;
+    }
+    .back-link {
+      display: block;
+      text-align: center;
+      color: #666666;
+      text-decoration: none;
+      margin-top: 24px;
+      font-size: 0.9rem;
+    }
+    .back-link:hover {
+      color: #ffffff;
+    }
+    .register-link, .login-link {
+      text-align: center;
+      margin-top: 20px;
+      color: #666666;
+      font-size: 0.9rem;
+    }
+    .register-link a, .login-link a {
+      color: #ffffff;
+      text-decoration: none;
+    }
+    .register-link a:hover, .login-link a:hover {
+      text-decoration: underline;
+    }
+    .form-section {
+      margin-bottom: 24px;
+    }
+    .help-text {
+      font-size: 0.85rem;
+      color: #666666;
+      margin-top: 12px;
+      text-align: center;
+    }
+    .encrypted-text { 
+      background: #000000; 
+      padding: 24px; 
+      border: 1px solid #333333; 
+      border-radius: 8px; 
+      font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace; 
+      font-size: 13px; 
+      line-height: 1.4; 
+      color: #cccccc;
+      margin-bottom: 24px;
+      max-height: 300px;
+      overflow-y: auto;
+      word-break: break-all;
+    }
+    .instructions {
+      color: #999999;
+      font-size: 0.95rem;
+      margin-bottom: 20px;
+      line-height: 1.5;
+    }
+    .user-info {
+      text-align: center;
+      margin-bottom: 32px;
+      padding: 16px;
+      background: #111111;
+      border-radius: 8px;
+      border: 1px solid #222222;
+    }
+    .user-info .username {
+      font-size: 1.2rem;
+      color: #ffffff;
+      font-weight: 400;
+    }
+    .user-info .label {
+      font-size: 0.85rem;
+      color: #666666;
+      margin-bottom: 4px;
+    }
+    .user-greeting {
+      font-size: 1.3rem;
+      color: #ffffff;
+      margin-bottom: 24px;
+      text-align: center;
+    }
+    .security-info {
+      background: #0a0a0a;
+      padding: 20px;
+      border-radius: 8px;
+      border: 1px solid #222222;
+      margin-bottom: 24px;
+      text-align: left;
+      font-size: 0.9rem;
+    }
+    .security-info strong {
+      color: #00ff88;
+    }
+    .logout-btn { 
+      display: inline-block;
+      color: #666666; 
+      text-decoration: none; 
+      padding: 12px 24px; 
+      border: 1px solid #333333; 
+      border-radius: 8px; 
+      font-weight: 500;
+      transition: all 0.2s ease;
+      text-align: center;
+    }
+    .logout-btn:hover { 
+      color: #ffffff; 
+      border-color: #ffffff;
+      transform: translateY(-1px);
+    }
+    .step-indicator {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    .step {
+      display: inline-block;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: #333333;
+      color: #666666;
+      line-height: 36px;
+      margin: 0 8px;
+      font-weight: 500;
+      font-size: 0.9rem;
+    }
+    .step.active {
+      background: #ffffff;
+      color: #000000;
+    }
+    .step:first-child {
+      background: #00ff88;
+      color: #000000;
     }
   </style>
 </head>
 <body>
-  <% if flash['notice'] %>
-    <div class="notice"><%= flash['notice'] %></div>
-  <% end %>
-  <% if flash['error'] %>
-    <div class="error"><%= flash['error'] %></div>
-  <% end %>
-  
-  <%= yield %>
+  <div class="container">
+    <%= yield %>
+  </div>
 </body>
 </html>

@@ -1,7 +1,31 @@
-<h2>Register with PGP Key</h2>
-<p>Paste your ASCII-armored PGP public key below:</p>
-<form method="post">
-  <%= csrf_tag %>
-  <textarea name="public_key" cols="80" rows="12" placeholder="Paste ASCII-armored public key" required></textarea><br>
-  <button type="submit">Submit public key</button>
-</form>
+<h2>Create Account</h2>
+<p class="subtitle">Secure two-factor authentication</p>
+<% if flash['error'] %>
+  <div class="error"><%= flash['error'] %></div>
+<% end %>
+<div class="form-container">
+  <form method="post">
+    <%= csrf_tag %>
+    <div class="form-section">
+      <h3>Account Information</h3>
+      <input type="text" name="username" placeholder="Username" required autocomplete="username">
+      <input type="password" name="password" placeholder="Password" required autocomplete="new-password">
+    </div>
+    
+    <div class="form-section">
+      <h3>PGP Key (2FA)</h3>
+      <p class="help-text">Your PGP key will be used for two-factor authentication</p>
+      <textarea name="public_key" placeholder="-----BEGIN PGP PUBLIC KEY BLOCK-----
+
+mQINBF...
+...
+-----END PGP PUBLIC KEY BLOCK-----" required></textarea>
+    </div>
+    
+    <button type="submit" class="btn">Create Account</button>
+  </form>
+  <div class="login-link">
+    Already have an account? <a href="/login">Login</a>
+  </div>
+</div>
+<a href="/" class="back-link">← Back</a>

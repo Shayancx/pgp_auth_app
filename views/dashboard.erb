@@ -1,3 +1,23 @@
-<h2>✓ Authenticated via PGP!</h2>
-<p>You've successfully authenticated using your PGP key. Welcome to your secure dashboard!</p>
-<a href="<%= rodauth.logout_path %>">Log out</a>
+<div class="success-icon">🔓</div>
+
+<% if flash['notice'] %>
+  <div class="notice"><%= flash['notice'] %></div>
+<% end %>
+
+<div class="user-greeting">Welcome, <%= CGI.escapeHTML(@account[:username]) %>!</div>
+
+<h2>Secure Dashboard</h2>
+
+<div class="welcome-container">
+  <p>You've successfully authenticated using two-factor authentication with PGP cryptographic verification.</p>
+  
+  <div class="security-info">
+    <strong>✓ Password Protected:</strong> Primary authentication<br>
+    <strong>✓ PGP 2FA Enabled:</strong> Cryptographic second factor<br>
+    <strong>✓ Zero-Knowledge:</strong> Server stores no secrets
+  </div>
+  
+  <p>Your account is protected by industry-standard security measures.</p>
+</div>
+
+<a href="/logout" class="logout-btn">Sign Out</a>
