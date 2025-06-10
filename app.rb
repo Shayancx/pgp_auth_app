@@ -4,10 +4,8 @@ require 'roda'
 require 'cgi'
 require 'tilt/erb'
 require_relative 'config/database'
-require 'rodauth'
 require_relative 'lib/pgp_auth'
 require_relative 'lib/rate_limit'
-require_relative 'pgp_challenge_feature'
 require_relative 'lib/session_manager'
 require_relative 'lib/session_middleware'
 require 'bcrypt'
@@ -29,12 +27,8 @@ class App < Roda
     middleware.use SessionMiddleware
   end
 
-  plugin :rodauth do
-    enable :base, :pgp_challenge
-  end
 
   route do |r|
-    r.rodauth
 
     r.root do
       view 'home'
@@ -476,9 +470,9 @@ class App < Roda
   end
 
   def require_authentication(r)
-    r.redirect '/login' unless session[:rodauth_session_key]
+    r.redirect '/login' unless session[:auth_account_id]
 
-    account_id = session[:rodauth_session_key]
+    account_id = session[:auth_account_id]
     account = DB[:accounts].where(id: account_id).first
 
     unless account

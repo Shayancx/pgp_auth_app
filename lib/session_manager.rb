@@ -3,6 +3,7 @@
 require_relative '../config/database'
 require 'securerandom'
 require 'json'
+require 'digest'
 
 # Main module for session management functionality
 module SessionManager
@@ -20,12 +21,13 @@ module SessionManager
       enforce_session_limit(account_id, account)
 
       token = SecureRandom.hex(32)
+      token_hash = Digest::SHA256.hexdigest(token)
       timeout_hours = account[:session_timeout_hours] || DEFAULT_TIMEOUT_HOURS
       expires_at = Time.now + (timeout_hours * 3600)
 
       DB[:user_sessions].insert(
         account_id: account_id,
-        session_token: token,
+        session_token: token_hash,
         ip_address: ip_address&.slice(0, 45),
         user_agent: user_agent&.slice(0, 1000),
         expires_at: expires_at
@@ -43,8 +45,9 @@ module SessionManager
     def validate_session(session_token, ip_address, user_agent)
       return nil unless session_token
 
+      token_hash = Digest::SHA256.hexdigest(session_token)
       session = DB[:user_sessions]
-                .where(session_token: session_token, revoked: false)
+                .where(session_token: token_hash, revoked: false)
                 .where { expires_at > Time.now }
                 .first
 
@@ -63,7 +66,10 @@ module SessionManager
 
     # Revoke a specific session
     def revoke_session(session_token, reason = 'user_logout')
-      session = DB[:user_sessions].where(session_token: session_token).first
+      return false unless session_token
+
+      token_hash = Digest::SHA256.hexdigest(session_token)
+      session = DB[:user_sessions].where(session_token: token_hash).first
       return false unless session
 
       DB[:user_sessions]
@@ -81,7 +87,11 @@ module SessionManager
     # Revoke all sessions for an account
     def revoke_all_sessions(account_id, except_token = nil)
       query = DB[:user_sessions].where(account_id: account_id, revoked: false)
-      query = query.exclude(session_token: except_token) if except_token
+      
+      if except_token
+        except_token_hash = Digest::SHA256.hexdigest(except_token)
+        query = query.exclude(session_token: except_token_hash)
+      end
 
       count = query.update(revoked: true, revoked_at: Time.now)
 
@@ -93,13 +103,25 @@ module SessionManager
       count
     end
 
-    # Get active sessions for an account
+    # Get active sessions for an account (return displayable token for UI)
     def get_active_sessions(account_id)
-      DB[:user_sessions]
-        .where(account_id: account_id, revoked: false)
-        .where { expires_at > Time.now }
-        .reverse(:last_accessed_at)
-        .all
+      sessions = DB[:user_sessions]
+                 .where(account_id: account_id, revoked: false)
+                 .where { expires_at > Time.now }
+                 .reverse(:last_accessed_at)
+                 .all
+
+      # Add display tokens for UI (first 8 chars for identification)
+      sessions.map do |session|
+        session[:display_token] = "#{session[:session_token][0..8]}..."
+        session
+      end
+    end
+
+    # Check if token matches session (for current session identification)
+    def token_matches_session?(session_token, stored_hash)
+      return false unless session_token && stored_hash
+      Digest::SHA256.hexdigest(session_token) == stored_hash
     end
 
     # Clean up expired sessions
@@ -167,7 +189,23 @@ module SessionManager
                .order(:last_accessed_at)
                .first
 
-      revoke_session(oldest[:session_token], 'max_sessions_exceeded') if oldest
+      revoke_session_by_hash(oldest[:session_token], 'max_sessions_exceeded') if oldest
+    end
+
+    def revoke_session_by_hash(token_hash, reason = 'user_logout')
+      session = DB[:user_sessions].where(session_token: token_hash).first
+      return false unless session
+
+      DB[:user_sessions]
+        .where(id: session[:id])
+        .update(revoked: true, revoked_at: Time.now)
+
+      log_event(session[:account_id], 'session_revoked', nil, nil, {
+                  reason: reason,
+                  session_token: "#{token_hash[0..8]}..."
+                })
+
+      true
     end
 
     def parse_user_agent(user_agent)

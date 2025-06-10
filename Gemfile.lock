@@ -63,9 +63,6 @@ GEM
     rexml (3.4.1)
     roda (3.92.0)
       rack
-    rodauth (2.39.0)
-      roda (>= 2.6.0)
-      sequel (>= 4)
     rspec (3.13.1)
       rspec-core (~> 3.13.0)
       rspec-expectations (~> 3.13.0)
@@ -116,7 +113,6 @@ DEPENDENCIES
   rack_csrf
   rackup
   roda
-  rodauth (~> 2.33)
   rspec
   sequel
   simplecov

@@ -19,7 +19,7 @@
       <div class="session-item">
         <div class="session-header">
           <strong><%= fingerprint[:browser] %></strong>
-          <% if session[:session_token] == @current_token %>
+          <% if SessionManager.token_matches_session?(@current_token, session[:session_token]) %>
             <span class="current-session">Current Session</span>
           <% end %>
         </div>
@@ -29,7 +29,7 @@
           <div>Last Active: <%= fingerprint[:last_accessed].strftime('%Y-%m-%d %H:%M:%S') %></div>
           <div>Expires: <%= fingerprint[:expires].strftime('%Y-%m-%d %H:%M:%S') %></div>
         </div>
-        <% unless session[:session_token] == @current_token %>
+        <% unless SessionManager.token_matches_session?(@current_token, session[:session_token]) %>
           <form method="post" action="/sessions/revoke" class="inline-form">
             <%= csrf_tag %>
             <input type="hidden" name="token" value="<%= session[:session_token] %>">

@@ -10,9 +10,10 @@ module ApplicationHelper
       'unknown'
   end
 
-  # Placeholder CSRF tag (disabled for now)
+  # Generate CSRF protection token tag (temporarily disabled)
   def csrf_tag
-    '<!-- CSRF temporarily disabled -->'
+    # TODO: Re-enable when CSRF gem is working
+    '<!-- CSRF temporarily disabled due to gem issues -->'
   end
 
   # Format rate limit message with time remaining
@@ -38,7 +39,7 @@ module ApplicationHelper
       env['HTTP_USER_AGENT']
     )
     session[:session_token] = session_token
-    session[:rodauth_session_key] = account_id
+    session[:auth_account_id] = account_id
     session_token
   end
 
