@@ -2,13 +2,7 @@
 
 Sequel.migration do
   change do
-    create_user_sessions_table
-    create_audit_logs_table
-    add_session_config_to_accounts
-  end
-
-  # Create user sessions table
-  def create_user_sessions_table
+    # Create user sessions table
     create_table :user_sessions do
       primary_key :id
       foreign_key :account_id, :accounts, null: false
@@ -26,10 +20,8 @@ Sequel.migration do
       index %i[account_id revoked], name: :idx_sessions_active
       index :expires_at, name: :idx_sessions_cleanup
     end
-  end
 
-  # Create audit logs table
-  def create_audit_logs_table
+    # Create audit logs table
     create_table :audit_logs do
       primary_key :id
       foreign_key :account_id, :accounts
@@ -43,10 +35,8 @@ Sequel.migration do
       index :event_type, name: :idx_audit_event
       index :created_at, name: :idx_audit_time
     end
-  end
 
-  # Add session configuration to accounts
-  def add_session_config_to_accounts
+    # Add session configuration to accounts
     alter_table :accounts do
       add_column :session_timeout_hours, Integer, default: 24, null: false
       add_column :max_concurrent_sessions, Integer, default: 5, null: false

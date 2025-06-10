@@ -1,0 +1,18 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Load bundler first
+require 'bundler/setup'
+
+require_relative '../config/database'
+require 'sequel'
+
+Sequel.extension :migration
+puts 'Running database migrations...'
+begin
+  Sequel::Migrator.run(DB, 'db/migrate')
+  puts '✓ Migrations completed successfully'
+rescue => e
+  puts "✗ Migration failed: #{e.message}"
+  exit 1
+end

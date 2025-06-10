@@ -1,0 +1,46 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+puts "🏥 Health Check for PGP Auth App"
+puts "================================"
+
+# Check PostgreSQL
+begin
+  require 'pg'
+  conn = PG.connect(dbname: 'postgres')
+  puts "✅ PostgreSQL: Connected"
+  conn.close
+rescue => e
+  puts "❌ PostgreSQL: #{e.message}"
+end
+
+# Check if database exists
+begin
+  require 'pg'
+  conn = PG.connect(dbname: 'pgp_auth_app')
+  puts "✅ Database: pgp_auth_app exists"
+  conn.close
+rescue => e
+  puts "❌ Database: #{e.message}"
+end
+
+# Check if all gems are available
+begin
+  require 'bundler/setup'
+  puts "✅ Bundler: All gems available"
+rescue => e
+  puts "❌ Bundler: #{e.message}"
+end
+
+# Check specific gems
+%w[roda sequel bcrypt gpgme].each do |gem_name|
+  begin
+    require gem_name
+    puts "✅ Gem #{gem_name}: Available"
+  rescue => e
+    puts "❌ Gem #{gem_name}: #{e.message}"
+  end
+end
+
+puts ""
+puts "If you see any ❌ above, run './bin/setup' to fix issues"

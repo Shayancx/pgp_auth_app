@@ -10,9 +10,9 @@ module ApplicationHelper
       'unknown'
   end
 
-  # Generate CSRF tag for forms
+  # Placeholder CSRF tag (disabled for now)
   def csrf_tag
-    Rack::Csrf.csrf_tag(env)
+    '<!-- CSRF temporarily disabled -->'
   end
 
   # Format rate limit message with time remaining
