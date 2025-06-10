@@ -1,6 +1,15 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
+# Load environment variables from .env file
+if File.exist?('.env')
+  File.readlines('.env').each do |line|
+    next if line.strip.empty? || line.start_with?('#')
+    key, value = line.strip.split('=', 2)
+    ENV[key] = value if key && value
+  end
+end
+
 # Development server startup script
 puts 'Starting PGP Auth development server...'
 puts 'Server will be available at: http://localhost:9292'

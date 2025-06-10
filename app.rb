@@ -81,8 +81,9 @@ class App < Roda
         generic_error = 'Invalid credentials. Please check your username and try again.'
 
         unless account
-          # Perform dummy password check to prevent timing attacks
-          BCrypt::Password.create('dummy').is_password?('dummy')
+          # Perform proper dummy password check to prevent timing attacks
+          dummy_hash = '$2a$12$CCCCCCCCCCCCCCCCCCCCCOE.BBBBBBBBBBBBBBBBBBBBBBBBBBBa'
+          BCrypt::Password.new(dummy_hash) == 'dummy_password_123'
 
           SessionManager.log_event(nil, 'login_failed', client_ip, env['HTTP_USER_AGENT'], {
                                      username: username,
@@ -561,4 +562,10 @@ class App < Roda
 
     yield account
   end
+end
+
+# Security validation on startup
+if ENV['RACK_ENV'] == 'production'
+  require_relative 'lib/environment_validator'
+  EnvironmentValidator.validate!
 end

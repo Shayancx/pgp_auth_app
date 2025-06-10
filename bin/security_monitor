@@ -1,0 +1,76 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require_relative '../config/database'
+require_relative '../lib/session_manager'
+require_relative '../lib/rate_limit'
+
+puts "🔍 PGP Auth Security Monitor"
+puts "============================"
+
+# Check for suspicious activity
+puts "\n📊 Security Status:"
+
+# Recent failed logins
+failed_logins = DB[:audit_logs]
+               .where(event_type: 'login_failed')
+               .where { created_at > Time.now - 3600 }
+               .count
+
+puts "Failed logins (last hour): #{failed_logins}"
+
+# Active sessions
+active_sessions = DB[:user_sessions]
+                 .where(revoked: false)
+                 .where { expires_at > Time.now }
+                 .count
+
+puts "Active sessions: #{active_sessions}"
+
+# Rate limited IPs
+rate_limited = DB[:rate_limits]
+              .where { blocked_until > Time.now }
+              .count
+
+puts "Rate limited entries: #{rate_limited}"
+
+# Accounts in PGP-only mode
+pgp_only_accounts = DB[:accounts]
+                   .where(pgp_only_mode: true)
+                   .count
+
+puts "PGP-only accounts: #{pgp_only_accounts}"
+
+# Check for anomalies
+puts "\n🚨 Security Alerts:"
+
+# Multiple failed logins from same IP
+suspicious_ips = DB[:audit_logs]
+                .where(event_type: 'login_failed')
+                .where { created_at > Time.now - 3600 }
+                .group(:ip_address)
+                .having { count.* > 10 }
+                .select(:ip_address, Sequel.function(:count, :*).as(:attempts))
+                .all
+
+if suspicious_ips.any?
+  puts "⚠️  Suspicious IPs with >10 failed logins:"
+  suspicious_ips.each do |ip_data|
+    puts "   #{ip_data[:ip_address]}: #{ip_data[:attempts]} attempts"
+  end
+else
+  puts "✅ No suspicious IP activity detected"
+end
+
+# Sessions from unusual locations
+if active_sessions > 100
+  puts "⚠️  High number of active sessions (#{active_sessions})"
+else
+  puts "✅ Normal session activity"
+end
+
+puts "\n📈 Recommendations:"
+puts "- Monitor failed login patterns"
+puts "- Review PGP-only account triggers"
+puts "- Check rate limiting effectiveness"
+puts "- Verify session security"
