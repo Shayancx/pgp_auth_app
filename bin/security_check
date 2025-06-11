@@ -1,0 +1,28 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Security validation script
+puts "🔍 Running security validation..."
+
+# Check required environment variables
+required_vars = %w[SESSION_SECRET CHALLENGE_SALT SESSION_SALT RATE_LIMIT_SALT]
+missing_vars = required_vars.reject { |var| ENV[var] && ENV[var].length >= 64 }
+
+unless missing_vars.empty?
+  puts "❌ Missing or weak security variables: #{missing_vars.join(', ')}"
+  puts "Generate with: openssl rand -hex 64"
+  exit 1
+end
+
+# Check file permissions
+security_files = %w[config.ru app.rb lib/session_manager.rb lib/pgp_auth.rb lib/rate_limit.rb]
+security_files.each do |file|
+  if File.exist?(file)
+    perms = sprintf("%o", File.stat(file).mode)[-3..-1]
+    unless perms == "644" || perms == "640"
+      puts "⚠️  File #{file} has permissions #{perms} (should be 644 or 640)"
+    end
+  end
+end
+
+puts "✅ Security validation completed"

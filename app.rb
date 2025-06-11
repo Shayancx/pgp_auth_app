@@ -99,8 +99,8 @@ class App < Roda
 
         unless account
           # Perform proper dummy password check to prevent timing attacks
-          dummy_hash = '$2a$12$CCCCCCCCCCCCCCCCCCCCCOE.BBBBBBBBBBBBBBBBBBBBBBBBBBBa'
-          BCrypt::Password.new(dummy_hash) == 'dummy_password_123'
+          dummy_hash = BCrypt::Password.create("dummy_password_for_timing_#{SecureRandom.hex(8)}", cost: 12)
+          BCrypt::Password.new(dummy_hash).is_password?("dummy_password_#{SecureRandom.hex(8)}")
 
           SessionManager.log_event(nil, 'login_failed', client_ip, env['HTTP_USER_AGENT'], {
                                      username: username,
@@ -612,3 +612,49 @@ if ENV['RACK_ENV'] == 'production'
   require_relative 'lib/environment_validator'
   EnvironmentValidator.validate!
 end
+
+  # SECURITY HARDENED: Enhanced input validation
+  def validate_and_sanitize_input(params)
+    sanitized = {}
+    
+    params.each do |key, value|
+      next unless value.is_a?(String)
+      
+      # Length limits
+      case key
+      when 'username'
+        value = value.slice(0, 50)
+      when 'password' 
+        value = value.slice(0, 128)
+      when 'public_key'
+        value = value.slice(0, 100_000)
+      when 'code'
+        value = value.slice(0, 100)
+      else
+        value = value.slice(0, 1000)
+      end
+      
+      # Sanitization
+      sanitized[key] = sanitize_input(value)
+    end
+    
+    sanitized
+  end
+
+  # SECURITY HARDENED: Enhanced error handling
+  def handle_error_securely(error, context = 'operation')
+    # Log full error for debugging
+    puts "ERROR in #{context}: #{error.message}" if ENV['RACK_ENV'] == 'development'
+    
+    # Return generic error to user
+    case error.message
+    when /PGP/i
+      'PGP operation failed. Please check your key and try again.'
+    when /password/i
+      'Authentication failed. Please check your credentials.'
+    when /network/i, /timeout/i
+      'Service temporarily unavailable. Please try again later.'
+    else
+      'An error occurred. Please try again.'
+    end
+  end

@@ -1,0 +1,47 @@
+#!/bin/bash
+# Production deployment script with security hardening
+
+set -euo pipefail
+
+echo "🔐 Preparing production deployment..."
+
+# Check security requirements
+./bin/security_check
+
+# Set restrictive file permissions
+find . -type f -name "*.rb" -exec chmod 640 {} \;
+find . -type f -name "*.yml" -exec chmod 640 {} \;
+find . -type f -name "*.env*" -exec chmod 600 {} \;
+
+# Create production environment template
+cat > .env.production.template << 'PRODEOF'
+# PRODUCTION ENVIRONMENT - CUSTOMIZE ALL VALUES
+
+# Database (use connection pooling and SSL)
+DATABASE_URL=postgres://user:pass@host:5432/pgp_auth_production?sslmode=require
+
+# CRITICAL: Generate unique values for production
+SESSION_SECRET=GENERATE_WITH_openssl_rand_hex_64
+CHALLENGE_SALT=GENERATE_WITH_openssl_rand_hex_64
+SESSION_SALT=GENERATE_WITH_openssl_rand_hex_64
+RATE_LIMIT_SALT=GENERATE_WITH_openssl_rand_hex_64
+
+# Production settings
+RACK_ENV=production
+TRUSTED_PROXY_IP=YOUR_LOAD_BALANCER_IP/32
+SESSION_DOMAIN=.yourdomain.com
+
+# Security configuration
+AUDIT_LOG_RETENTION_DAYS=90
+RATE_LIMIT_RETENTION_HOURS=24
+SESSION_TIMEOUT_HOURS=1
+SECURITY_MONITORING_ENABLED=true
+FAILED_LOGIN_NOTIFICATION_THRESHOLD=3
+PRODEOF
+
+echo "✅ Production deployment prepared"
+echo "📋 Next steps:"
+echo "1. Copy .env.production.template to .env.production"
+echo "2. Generate all secret values with: openssl rand -hex 64"
+echo "3. Configure your database and proxy settings"
+echo "4. Run: RACK_ENV=production bundle exec rackup"

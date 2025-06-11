@@ -69,3 +69,15 @@ sessions/
 
 # PID files
 *.pid
+
+# SECURITY HARDENED: Additional security exclusions
+.env.production
+.env.staging
+*.key
+*.pem
+*.p12
+*.pfx
+security_backup_*/
+*.backup
+audit_*.log
+security_*.log

@@ -1,0 +1,62 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require_relative '../config/database'
+require_relative '../lib/session_manager'
+require_relative '../lib/rate_limit'
+
+puts "🔍 Enhanced Security Monitor"
+puts "============================"
+
+# Check for critical security issues
+puts "\n🚨 Critical Security Alerts:"
+
+# Check for accounts with excessive failed logins
+high_risk_accounts = DB[:accounts]
+                    .where { failed_password_count > 10 }
+                    .or { login_attempts_count > 20 }
+                    .count
+
+if high_risk_accounts > 0
+  puts "⚠️  #{high_risk_accounts} accounts with excessive failed attempts"
+else
+  puts "✅ No accounts with excessive failed attempts"
+end
+
+# Check for suspicious session activity
+suspicious_sessions = DB[:user_sessions]
+                     .where(revoked: false)
+                     .where { suspicious_activity_score > 5 }
+                     .count
+
+if suspicious_sessions > 0
+  puts "⚠️  #{suspicious_sessions} sessions with suspicious activity"
+else  
+  puts "✅ No suspicious session activity detected"
+end
+
+# Check for rate limit violations
+current_blocks = DB[:rate_limits]
+                .where { blocked_until > Time.now }
+                .count
+
+puts "📊 Current rate limit blocks: #{current_blocks}"
+
+# Check audit log for investigation flags
+investigations_needed = DB[:audit_logs]
+                       .where(investigation_required: true)
+                       .where { created_at > Time.now - 86400 }
+                       .count
+
+if investigations_needed > 0
+  puts "🔍 #{investigations_needed} events require investigation"
+else
+  puts "✅ No events requiring investigation"
+end
+
+puts "\n📈 Security Recommendations:"
+puts "- Monitor failed login patterns every hour"
+puts "- Review audit logs daily for anomalies"  
+puts "- Update security salts monthly"
+puts "- Rotate session secrets quarterly"
+puts "- Validate PGP key integrity regularly"
