@@ -74,7 +74,6 @@ class App < Roda
       end
 
       r.post do
-        # Check rate limit first
         if RateLimit.blocked?(client_ip, 'login')
           flash['error'] = rate_limit_message('login', client_ip)
           r.redirect '/login'
@@ -82,13 +81,11 @@ class App < Roda
 
         username = r.params['username'].to_s.strip
 
-        # FIXED: Only apply rate limiting after basic validation
         if username.empty?
           flash['error'] = 'Username is required'
           r.redirect '/login'
         end
 
-        # NOW record the attempt after validation passes
         RateLimit.record_attempt(client_ip, 'login')
 
         # Always perform constant-time lookup
@@ -174,13 +171,6 @@ class App < Roda
         end
 
         submitted_code = r.params['code'].to_s.strip
-        
-        # FIXED: Only record attempt after basic validation
-        if submitted_code.empty?
-          flash['error'] = 'Authentication code is required'
-          r.redirect '/login-pgp-only'
-        end
-
         RateLimit.record_attempt(account_id.to_s, '2fa')
 
         if verify_pgp_challenge(account_id, submitted_code)
@@ -227,13 +217,6 @@ class App < Roda
         end
 
         submitted_code = r.params['code'].to_s.strip
-        
-        # FIXED: Only record attempt after basic validation
-        if submitted_code.empty?
-          flash['error'] = 'Authentication code is required'
-          r.redirect '/pgp-2fa'
-        end
-
         RateLimit.record_attempt(account_id.to_s, '2fa')
 
         if verify_pgp_challenge(account_id, submitted_code)
@@ -308,15 +291,8 @@ class App < Roda
           r.redirect '/verify-pgp'
         end
 
-        submitted_code = r.params['code'].to_s.strip
-
-        # FIXED: Only record attempt after basic validation
-        if submitted_code.empty?
-          flash['error'] = 'Verification code is required'
-          r.redirect '/verify-pgp'
-        end
-
         RateLimit.record_attempt(client_ip, 'verify_pgp')
+        submitted_code = r.params['code'].to_s.strip
 
         account = DB[:accounts].where(id: account_id).first
 
@@ -460,18 +436,15 @@ class App < Roda
   end
 
   def handle_registration(r)
-    # Check rate limit first
     if RateLimit.blocked?(client_ip, 'register')
       flash['error'] = rate_limit_message('register', client_ip)
       r.redirect '/register'
     end
 
-    # FIXED: Validate parameters first, THEN record attempt
+    RateLimit.record_attempt(client_ip, 'register')
+
     params = validate_registration_params(r)
     return unless params
-
-    # NOW record the attempt since validation passed
-    RateLimit.record_attempt(client_ip, 'register')
 
     begin
       fp = PgpAuth.import_and_fingerprint(params[:key_text])
@@ -493,7 +466,6 @@ class App < Roda
     password = r.params['password'].to_s
     key_text = r.params['public_key'].to_s.strip
 
-    # FIXED: Don't penalize for basic form validation errors
     if username.empty? || password.empty? || key_text.empty?
       flash['error'] = 'All fields are required'
       r.redirect '/register'
@@ -515,7 +487,6 @@ class App < Roda
       return nil
     end
 
-    # Check for existing username - this is the actual "attempt"
     if DB[:accounts].where(username: username).count.positive?
       flash['error'] = 'Username already taken'
       r.redirect '/register'

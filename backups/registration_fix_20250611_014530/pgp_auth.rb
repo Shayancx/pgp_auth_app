@@ -237,54 +237,24 @@ module PgpAuth
   end
 
   # Validate cryptographic algorithms (safer approach)
-  # Validate cryptographic algorithms (safer approach with better error handling)
   def validate_key_algorithms(key)
     begin
       key.subkeys.each do |subkey|
         next unless subkey.respond_to?(:pubkey_algo) && subkey.respond_to?(:length)
         
-        algo = subkey.pubkey_algo
-        algo_name = case algo
-                   when :rsa then 'RSA'
-                   when :dsa then 'DSA' 
-                   when :elgamal then 'ElGamal'
-                   when :ecdsa then 'ECDSA'
-                   when :ecdh then 'ECDH'
-                   when :eddsa then 'EdDSA'
-                   else
-                     # Handle unknown algorithms gracefully
-                     if algo.respond_to?(:to_s)
-                       algo.to_s
-                     else
-                       'Unknown'
-                     end
-                   end
-        
-        # Only check specific algorithms we care about
-        case algo
+        # Check for weak algorithms
+        case subkey.pubkey_algo
         when :dsa
-          raise 'DSA keys must be at least 3072 bits' if subkey.length < 3072
+          raise 'DSA keys are not allowed' if subkey.length < 3072
         when :rsa
-          raise "RSA key too small: #{subkey.length} bits (minimum #{MIN_KEY_SIZE})" if subkey.length < MIN_KEY_SIZE
+          raise 'RSA key too small' if subkey.length < MIN_KEY_SIZE
         when :elgamal
           puts 'Warning: ElGamal keys are not recommended' if ENV['RACK_ENV'] == 'development'
-        else
-          # For unknown algorithms, just warn rather than fail
-          if ENV['RACK_ENV'] == 'development'
-            puts "Info: Key uses algorithm #{algo_name} which is not explicitly validated"
-          end
         end
       end
     rescue NoMethodError => e
       puts "Warning: Could not validate key algorithms: #{e.message}" if ENV['RACK_ENV'] == 'development'
-      # Continue without algorithm validation if methods don't exist
-    rescue => e
-      # Convert algorithm validation errors to user-friendly messages
-      if e.message.include?('Unknown') || e.message.include?('algorithm')
-        raise "PGP key uses an unsupported or unrecognized algorithm. Please use RSA (2048+ bits) or modern elliptic curve keys."
-      else
-        raise e
-      end
+      # Continue without algorithm validation
     end
   end
 

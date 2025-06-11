@@ -370,30 +370,3 @@ module RateLimit
     end
   end
 end
-
-  # ENHANCED: Check if a rate limit attempt should be ignored for basic validation errors
-  def should_ignore_attempt?(action, error_type)
-    # Don't penalize for basic form validation errors
-    ignored_errors = {
-      'register' => ['empty_fields', 'invalid_format', 'password_complexity'],
-      'login' => ['empty_username'],
-      'verify_pgp' => ['empty_code'],
-      '2fa' => ['empty_code']
-    }
-    
-    ignored_errors[action]&.include?(error_type) || false
-  end
-
-  # ENHANCED: Smart rate limiting that considers error types
-  def record_smart_attempt(identifier, action, error_type = nil)
-    return false if should_ignore_attempt?(action, error_type)
-    record_attempt(identifier, action)
-  end
-
-  # ENHANCED: Rate limit exemptions for certain user scenarios  
-  def should_exempt_from_rate_limit?(identifier, action)
-    # Could add logic here to exempt certain users/IPs
-    # For example, whitelist trusted internal IPs
-    return true if ENV['TRUSTED_INTERNAL_IPS']&.split(',')&.include?(identifier)
-    false
-  end

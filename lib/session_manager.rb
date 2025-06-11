@@ -561,3 +561,24 @@ module SessionManager
     end
   end
 end
+
+  # ENHANCED: Log rate limiting events with context
+  def log_rate_limit_event(identifier, action, blocked, details = {})
+    return unless DB.table_exists?(:audit_logs)
+
+    enhanced_details = details.merge({
+      identifier_hash: Digest::SHA256.hexdigest("#{SESSION_SALT}:#{identifier}")[0..7],
+      action: action,
+      blocked: blocked,
+      rate_limit_triggered: true
+    })
+
+    DB[:audit_logs].insert(
+      account_id: nil,
+      event_type: blocked ? 'rate_limit_blocked' : 'rate_limit_recorded',
+      ip_address: identifier.match?(/\A\d+\.\d+\.\d+\.\d+\z/) ? identifier : nil,
+      details: enhanced_details.to_json,
+      success: !blocked,
+      created_at: Time.now
+    )
+  end
